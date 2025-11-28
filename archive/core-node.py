@@ -5,6 +5,7 @@ A visual node-based editor built with DearPyGui for creating and configuring
 workflow nodes with an HTTP request example implementation.
 """
 
+from functools import partial
 import uuid
 import random
 from enum import Enum
@@ -82,6 +83,7 @@ class NodeBase(ABC):
         """Create the visual node in the editor with control buttons."""
         # Generate random initial position
         mouse_pos = dpg.get_mouse_pos(local=False)
+        mouse_pos[1] = mouse_pos[1] - 100
         # self.pos = [random.randint(50, 400), random.randint(50, 400)]
         self.pos = mouse_pos
 
@@ -100,11 +102,27 @@ class NodeBase(ABC):
                     dpg.mvNode_Attr_Input if has_inputs else dpg.mvNode_Attr_Static
                 ),
             ):
+                with dpg.group(horizontal=True):
+                    dpg.add_button(
+                        label="Delete",
+                        callback=lambda: self.delete(),
+                        width=100,
+                        tag=f"{self.id}_delete_btn",
+                    )
+                    dpg.add_button(
+                        label="Edit",
+                        callback=lambda: self.show_inspector(),
+                        width=100,
+                        tag=f"{self.id}_edit_btn",
+                        show=True if has_config else False,
+                    )
+                    
                 dpg.add_button(
-                    label="Delete",
-                    callback=lambda: self.delete(),
-                    width=150,
-                    tag=f"{self.id}_delete_btn",
+                    label="Execute",
+                    callback=lambda: self.execute(),
+                    width=210,
+                    tag=f"{self.id}_execute_btn",
+                    show=True,
                 )
 
             # Output attribute with configure button and status text
@@ -113,13 +131,7 @@ class NodeBase(ABC):
                 shape=dpg.mvNode_PinShape_Triangle,
                 attribute_type=dpg.mvNode_Attr_Output,
             ):
-                dpg.add_button(
-                    label="Configure",
-                    callback=lambda: self.show_inspector(),
-                    width=150,
-                    tag=f"{self.id}_configure_btn",
-                    show=True if has_config else False,
-                )
+
                 dpg.add_text(
                     default_value=f"ID: {self.id[-8:]}", tag=f"{self.id}_state"
                 )
@@ -218,7 +230,7 @@ class NodeBase(ABC):
         """Display the inspector window near the node."""
         # Position inspector near the node
         node_pos = dpg.get_item_pos(self.id)
-        inspector_pos = [node_pos[0] + 200, node_pos[1]]
+        inspector_pos = [node_pos[0], node_pos[1]]
 
         dpg.configure_item(item=f"{self.id}_inspector", pos=inspector_pos, show=True)
 
@@ -252,6 +264,37 @@ class NodeBase(ABC):
 # ============================================================================
 # Node Implementations
 # ============================================================================
+
+
+class ManualTriggerNode(NodeBase):
+    def __init__(self, name: str, parent: str) -> None:
+        """
+        Initialize an Manual Trigger node.
+
+        Args:
+            name: Display name for the node
+            parent: Tag of the parent node editor
+        """
+        super().__init__(name, parent)
+
+        self.fields = {
+            "status": {
+                "value": "PENDING",
+                "type": str,
+                "label": "Status",
+            },
+        }
+
+        # Initialize the node
+        self.node_ui(has_inputs=False, has_config=False)
+        self.node_configure()
+        self.setup_node_inspector()
+
+    def save(self) -> None:
+        pass
+
+    def execute(self) -> Dict[str, any]:
+        return self.state
 
 
 class HTTPRequestNode(NodeBase):
@@ -320,32 +363,117 @@ class HTTPRequestNode(NodeBase):
         return self.state
 
 
-class ManualTriggerNode(NodeBase):
+class ExecuteCommandNode(NodeBase):
     def __init__(self, name: str, parent: str) -> None:
-        """
-        Initialize an Manual Trigger node.
-
-        Args:
-            name: Display name for the node
-            parent: Tag of the parent node editor
-        """
         super().__init__(name, parent)
 
         self.fields = {
-            "status": {
-                "value": "PENDING",
+            "command": {
+                "value": "echo Hello World",
                 "type": str,
-                "label": "Status",
+                "label": "Execute Command",
+            },
+            "log_file": {
+                "value": f"{self.id[-8:]}.log",
+                "type": str,
+                "label": "Log-file Path",
             },
         }
 
         # Initialize the node
-        self.node_ui(has_inputs=False, has_config=False)
+        self.node_ui()
         self.node_configure()
         self.setup_node_inspector()
 
     def save(self) -> None:
-        pass
+        """Save changes from inspector inputs back to node state."""
+        # Update state from UI input values
+        for field_key in self.fields.keys():
+            input_tag = f"{self.id}_{field_key}"
+            self.state[field_key] = dpg.get_value(item=input_tag)
+
+        # Update the status display on the node
+        status_text = f"{self.state['command']}\n{self.state['log_file']}"
+        dpg.set_value(f"{self.id}_state", value=status_text)
+
+        # Debug output
+        console.print(f"[cyan]Saved node: {self.id[-8:]}[/cyan]")
+        console.print(f"  State: {self.state}")
+
+        # Close the inspector
+        self.close_inspector()
+
+    def execute(self) -> Dict[str, any]:
+        console.print(
+            f"[yellow]Executing command: {self.state['command']}\nSaving to: {self.state['log_file']}[/yellow]"
+        )
+        return self.state
+
+
+class ChatModelNode(NodeBase):
+
+    def __init__(self, name: str, parent: str) -> None:
+        super().__init__(name, parent)
+        self.fields = {
+            "model": {
+                "value": "gemma-3",
+                "type": str,
+                "label": "Model to use",
+            },
+            "base_url": {
+                "value": "http://localhost:8080",
+                "type": str,
+                "label": "API Base-URL",
+            },
+            "temperature": {
+                "value": 0.1,
+                "type": float,
+                "label": "Model Temperature"
+            },
+            "max_tokens": {
+                "value": 500,
+                "type": int,
+                "label": "Max Output tokens"
+            },
+            "timeout": {
+                "value": 30,
+                "type": int,
+                "label": "Timeout"
+            },
+            "system_prompt": {
+                "value": "You are a highly capable AI assistant designed to help with \ncoding, technical problems, and general inquiries.\nYour core strengths are problem-solving, clear explanations, \nand writing high-quality code.",
+                "type": LongString,
+                "label": "System prompt",
+            },
+            "query": {
+                "value": "Tell me about yourself",
+                "type": str,
+                "label": "Specify query",
+            },
+        }
+
+        # Initialize the node
+        self.node_ui()
+        self.node_configure()
+        self.setup_node_inspector()
+
+    def save(self) -> None:
+        """Save changes from inspector inputs back to node state."""
+        # Update state from UI input values
+        for field_key in self.fields.keys():
+            input_tag = f"{self.id}_{field_key}"
+            self.state[field_key] = dpg.get_value(item=input_tag)
+
+        # Update the status display on the node
+        status_text = f"{self.state['model']}\n{self.state['base_url']}"
+        dpg.set_value(f"{self.id}_state", value=status_text)
+
+        # Debug output
+        console.print(f"[cyan]Saved node: {self.id[-8:]}[/cyan]")
+        console.print(f"  State: {self.state}")
+
+        # Close the inspector
+        self.close_inspector()
 
     def execute(self) -> Dict[str, any]:
         return self.state
@@ -355,9 +483,9 @@ class ManualTriggerNode(NodeBase):
 # Node Enum
 # ============================================================================
 class ExecutionNodes(Enum):
-    HTTP_Request = HTTPRequestNode,
-    # Command_Exec = CommandExecNode,
-    # Chat_Model   = ChatModelNode,
+    HTTP_Request = HTTPRequestNode
+    Execute_Command = ExecuteCommandNode
+    Chat_Model = ChatModelNode
     # Agent_Model  = AgentModelNode
 
 
@@ -390,7 +518,7 @@ class LighthouseApp:
         self.width = width
         self.height = height
         self.nodes: Dict[str, NodeBase] = {}
-        self.edge: List[tuple(str, str)] 
+        self.edge: List[tuple(str, str)]
         self.connections: Dict[str, List[NodeBase]]
 
         # Initialize DearPyGui
@@ -424,28 +552,45 @@ class LighthouseApp:
             dpg.add_text("Add Node", color=(120, 180, 255))
             dpg.add_separator()
             dpg.add_text("Trigger Nodes", color=(150, 150, 155))
-            
-            enum_types = [e for e in TriggerNodes]
-            console.print(enum_types)
 
-            for node_type in enum_types:
+            trigger_types = [e for e in TriggerNodes]
+            # console.print(trigger_types)
+
+            def _make_callback_trig(trig_t):
+                def callback(sender, app_data, user_data):
+                    self._add_trigger_node(trig_t)
+
+                return callback
+
+            for trigger_type in trigger_types:
                 # Manual Trigger
                 dpg.add_button(
-                    label=f"{node_type.name.replace('_', ' ')}",
-                    callback=lambda: self._add_trigger_node(node_type),
+                    label=f"{trigger_type.name.replace('_', ' ')}",
+                    # callback=lambda: self._add_trigger_node(trigger_type),
+                    callback=_make_callback_trig(trigger_type),
                     width=200,
-                    tag=f"{node_type.name}_add_btn",
+                    tag=f"{trigger_type.name}_add_btn",
                 )
 
             dpg.add_separator()
             dpg.add_text("Execution Nodes", color=(150, 150, 155))
-            # HTTP Request
-            dpg.add_button(
-                label="HTTP Request Node",
-                callback=lambda: self._add_execution_node(ExecutionNodes.HTTP_Request),
-                width=200,
-                tag="add_http_node_btn",
-            )
+
+            exec_types = [i for i in ExecutionNodes]
+
+            def _make_callback_exec(exec_t):
+                def callback(sender, app_data, user_data):
+                    self._add_execution_node(exec_t)
+
+                return callback
+
+            for exec_type in exec_types:
+                console.print(f"Creating {exec_type}")
+                dpg.add_button(
+                    label=f"{exec_type.name.replace('_', ' ')}",
+                    callback=_make_callback_exec(exec_type),
+                    width=200,
+                    tag=f"{exec_type.name}_add_btn",
+                )
 
     def _setup_handlers(self) -> None:
         """Setup input handlers for the application."""
@@ -478,25 +623,28 @@ class LighthouseApp:
 
     def _add_execution_node(self, type_name: ExecutionNodes):
 
-        if type_name == ExecutionNodes.HTTP_Request:
-            node = type_name.value("HTTP Request", parent="node_editor")
+        try:
+            console.print(type_name)
+            node = type_name.value(
+                f"{type_name.name.replace('_', ' ')}", parent="node_editor"
+            )
             self.nodes[node.id] = node
             console.print(f"[green]Added {type_name.name} node: {node.id[-8:]}[/green]")
-        else:
-            console.print(f"Failed to find nodeType: {type_name.name}")
-            raise NotImplementedError
+        except Exception as e:
+            console.print_exception(f"Failed to create nodeType {type_name.name}: {e}")
 
         dpg.configure_item("context_menu", show=False)
 
     def _add_trigger_node(self, type_name: TriggerNodes):
 
-        if type_name == TriggerNodes.Manual_Trigger:
-            node = type_name.value(f"{type_name.name.replace('_', ' ')}", parent="node_editor")
+        try:
+            node = type_name.value(
+                f"{type_name.name.replace('_', ' ')}", parent="node_editor"
+            )
             self.nodes[node.id] = node
             console.print(f"[green]Added {type_name.name} node: {node.id[-8:]}[/green]")
-        else:
-            console.print(f"Failed to find nodeType: {type_name.name}")
-            raise NotImplementedError
+        except Exception as e:
+            console.print_exception(f"Failed to create nodeType {type_name.name}: {e}")
 
         dpg.configure_item("context_menu", show=False)
 
