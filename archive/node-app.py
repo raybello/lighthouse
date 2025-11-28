@@ -713,6 +713,7 @@ class NodeFlowGUI:
 
     def topological_sort(self) -> List[str]:
         """Perform topological sort to determine execution order"""
+        
         in_degree = {node_id: len(node.inputs) for node_id, node in self.nodes.items()}
         queue = [node_id for node_id, degree in in_degree.items() if degree == 0]
         result = []
