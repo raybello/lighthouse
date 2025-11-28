@@ -43,6 +43,8 @@ class NodeFlowGUI:
 
         self.setup_themes()
         self.setup_gui()
+        self.add_value_node_from_context("int")
+        self.add_operation_node("add")
 
     def setup_themes(self):
         """Setup visual themes for the application"""
@@ -207,8 +209,8 @@ class NodeFlowGUI:
                         tag="node_editor",
                     ):
                         pass
+                        # Right panel for results and controls
 
-                # Right panel for results and controls
                 with dpg.child_window(width=-1, height=800):
                     with dpg.tab_bar():
                         with dpg.tab(label="Controls"):
@@ -414,7 +416,17 @@ class NodeFlowGUI:
                 )
                 dpg.bind_item_theme(dpg.last_item(), "delete_button_theme")
 
-            with dpg.node_attribute(tag=f"{node_tag}_config"):
+            with dpg.node_attribute(tag=f"{node_tag}_configure", shape=-1):
+
+                dpg.add_button(
+                    label="Configure",
+                    width=150,
+                    callback=lambda: dpg.configure_item(f"{node_tag}modal_id", show=True),
+                    tag=f"{node_tag}_configure_btn",
+                )
+                dpg.bind_item_theme(dpg.last_item(), "context_button_theme")
+
+            with dpg.node_attribute(tag=f"{node_tag}_config", shape=-1):
                 if value_type == "int":
                     dpg.add_input_int(
                         label="Value",
@@ -441,9 +453,19 @@ class NodeFlowGUI:
                     )
 
             with dpg.node_attribute(
-                attribute_type=dpg.mvNode_Attr_Output, tag=f"{node_tag}_output"
+                attribute_type=dpg.mvNode_Attr_Output, tag=f"{node_tag}_output", shape=dpg.mvNode_PinShape_Triangle
             ):
                 dpg.add_text("Output ->")
+        
+        with dpg.window(label="Delete Files", modal=True, popup=True, show=False, tag=f"{node_tag}modal_id", no_title_bar=True, pos=pos):
+            dpg.add_text("All those beautiful files will be deleted.\nThis operation cannot be undone!")
+            dpg.add_separator()
+            dpg.add_checkbox(label="Don't ask me next time")
+            with dpg.group(horizontal=True):
+                dpg.add_button(label="OK", width=75, callback=lambda: dpg.configure_item(f"{node_tag}modal_id", show=False))
+                dpg.add_button(label="Cancel", width=75, callback=lambda: dpg.configure_item(f"{node_tag}modal_id", show=False))
+
+
 
     def add_operation_node(self, operation: str):
         """Add an operation node (add, subtract, multiply, divide)"""
@@ -491,11 +513,10 @@ class NodeFlowGUI:
                 attribute_type=dpg.mvNode_Attr_Output, tag=f"{node_tag}_output"
             ):
                 dpg.add_text("Output ->")
-                
+
             with dpg.node_attribute(tag=f"{node_tag}_result", shape=-1):
                 dpg.add_text("Result: N/A", tag=f"{node_tag}_result_text", wrap=400)
                 # dpg.add_input_text(multiline=True, default_value="Result: N/A", height=100, width=200, tag=f"{node_tag}_result_text", tab_input=True, readonly=True)
-                
 
     def add_conditional_node(self):
         """Add a conditional node"""
@@ -542,7 +563,7 @@ class NodeFlowGUI:
                     callback=lambda s, a: self.update_node_value(node_id, a),
                     tag=f"{node_tag}_threshold",
                 )
-                
+
             with dpg.node_attribute(
                 attribute_type=dpg.mvNode_Attr_Output, tag=f"{node_tag}_output"
             ):
@@ -550,7 +571,6 @@ class NodeFlowGUI:
 
             with dpg.node_attribute(tag=f"{node_tag}_result", shape=-1):
                 dpg.add_text("Result: N/A", tag=f"{node_tag}_result_text", wrap=400)
-
 
     def update_node_value(self, node_id: str, value: Any):
         """Update a node's stored value"""
