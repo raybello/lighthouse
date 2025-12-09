@@ -9,6 +9,8 @@ dpg.add_texture_registry(label="Demo Texture Container", tag="__demo_texture_con
 
 def create_static_textures():
     ## create static textures
+    border_width = 3  # Width of the dark border
+
     texture_data1 = []
     for i in range(100 * 100):
         texture_data1.append(255 / 255)
@@ -24,28 +26,26 @@ def create_static_textures():
         texture_data2.append(255 / 255)
 
     texture_data3 = []
-    for row in range(50):
-        for column in range(50):
-            texture_data3.append(255 / 255)
-            texture_data3.append(0)
-            texture_data3.append(0)
-            texture_data3.append(255 / 255)
-        for column in range(50):
-            texture_data3.append(0)
-            texture_data3.append(255 / 255)
-            texture_data3.append(0)
-            texture_data3.append(255 / 255)
-    for row in range(50):
-        for column in range(50):
-            texture_data3.append(0)
-            texture_data3.append(0)
-            texture_data3.append(255 / 255)
-            texture_data3.append(255 / 255)
-        for column in range(50):
-            texture_data3.append(255 / 255)
-            texture_data3.append(255 / 255)
-            texture_data3.append(0)
-            texture_data3.append(255 / 255)
+    for row in range(100):
+        for column in range(100):
+            # Check if we're in the border region
+            if (
+                row < border_width
+                or row >= 100 - border_width
+                or column < border_width
+                or column >= 100 - border_width
+            ):
+                # Dark border (dark green/black)
+                texture_data3.append(0.1)  # R
+                texture_data3.append(0.2)  # G
+                texture_data3.append(0.1)  # B
+                texture_data3.append(1.0)  # A
+            else:
+                # Forest green background
+                texture_data3.append(34 / 255)  # R
+                texture_data3.append(139 / 255)  # G
+                texture_data3.append(34 / 255)  # B
+                texture_data3.append(1.0)  # A
 
     # Add green texture
     texture_data4 = []
@@ -170,10 +170,10 @@ image_bounds = [
     },
     {
         "min": [9.5, 1.5],
-        "max": [11, 2.5],
+        "max": [15, 2.5],
         "label": "Network Operation",
-        "duration": "1.5ms",
-        "time": "9.5ms - 11.0ms",
+        "duration": "5.5ms",
+        "time": "9.5ms - 15.0ms",
     },
 ]
 
@@ -228,7 +228,7 @@ with dpg.window(label="Tutorial", width=900, height=500, tag="main_window"):
                 "__demo_static_texture_5", [6, 1.5], [9, 2.5], label="network 2"
             )
             dpg.add_image_series(
-                "__demo_static_texture_3", [9.5, 1.5], [11, 2.5], label="network 3"
+                "__demo_static_texture_3", [9.5, 1.5], [15, 2.5], label="network 3"
             )
 
         with dpg.plot_axis(dpg.mvXAxis, label="time(ms)") as xaxis:
