@@ -28,6 +28,7 @@ jobs:
           pip install pyinstaller
 
       - name: Build executable
+        shell: bash
         run: |
           if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
             pyinstaller --onefile main.py --name lighthouse --add-data "fonts;fonts"
@@ -36,6 +37,7 @@ jobs:
           fi
           
       - name: Prepare release assets
+        shell: bash
         run: |
           mkdir -p release
           if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
