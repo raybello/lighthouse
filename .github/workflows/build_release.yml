@@ -33,6 +33,7 @@ jobs:
             pyinstaller --onefile main.py --name lighthouse --add-data "fonts;fonts"
           else
             pyinstaller --onefile main.py --name lighthouse --add-data "fonts:fonts"
+          fi
           
       - name: Prepare release assets
         run: |
