@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.0.13] - 2025-12-09
+
+### Added
+
+### Changed
+
+### Fixed
+- Bumped dearpgygui up to 1.8.0
+
+### Removed
+
 ## [1.0.12] - 2025-12-09
 
 ### Added
