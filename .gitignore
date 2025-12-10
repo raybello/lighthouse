@@ -1,0 +1,12 @@
+# Python bytecode
+*.pyc
+__pycache__/
+
+# PyInstaller build artifacts
+dist/
+build/
+*.spec
+
+# OS files (optional, but recommended)
+.DS_Store
+Thumbs.db

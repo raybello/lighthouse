@@ -1,4 +1,4 @@
-from src.nodes import *
+from .nodes import *
 
 class LighthouseApp:
     """
@@ -110,6 +110,15 @@ class LighthouseApp:
 
         dpg.delete_item(app_data)
 
+    def resource_path(self, relative_path):
+        """ Get absolute path to resource, works for dev and for PyInstaller """
+        if hasattr(sys, '_MEIPASS'):
+            # Running from the bundled exe
+            return os.path.join(sys._MEIPASS, relative_path)
+        else:
+            # Running normally (source code)
+            return os.path.join(os.path.abspath("."), relative_path)
+
     def _setup_theme(self):
         """Setup visual themes for the application"""
 
@@ -187,7 +196,9 @@ class LighthouseApp:
         with dpg.font_registry():
             # first argument ids the path to the .ttf or .otf file
             # default_font = dpg.add_font("fonts/SF-Pro.ttf", 17)
-            default_font = dpg.add_font("fonts/SF-Pro-Display-Regular.otf", 17)
+            default_font = dpg.add_font(
+                self.resource_path("fonts/SF-Pro-Display-Regular.otf"), 17
+            )
 
         dpg.bind_font(default_font)
 
