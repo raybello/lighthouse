@@ -9,6 +9,7 @@ import sys
 
 
 from rich.console import Console
+
 console = Console()
 
 
@@ -22,6 +23,7 @@ class LongString(str):
     This allows the node inspector to differentiate between single-line
     and multi-line text input fields in the UI.
     """
+
     pass
 
 
@@ -149,18 +151,22 @@ class NodeBase(ABC):
                 shape=dpg.mvNode_PinShape_Triangle,
                 attribute_type=dpg.mvNode_Attr_Output,
             ):
+                # Status text showing node ID (last 8 characters)
+                dpg.add_text(
+                    default_value="-", tag=f"{self.id}_state", color=(86, 145, 193)
+                )
                 with dpg.group(horizontal=True):
-                    dpg.add_loading_indicator(
-                        style=1,
-                        radius=1.5,
-                        show=False,
-                        tag=f"{self.id}_loading",
-                    )
                     dpg.add_text(
                         bullet=True,
                         default_value=f"{self.id}",
                         tag=f"{self.id}_id",
                         color=(86, 145, 193),
+                    )
+                    dpg.add_loading_indicator(
+                        style=1,
+                        radius=1.5,
+                        show=False,
+                        tag=f"{self.id}_loading",
                     )
                     with dpg.tooltip(parent=f"{self.id}_id"):
                         dpg.add_text(
@@ -173,10 +179,6 @@ class NodeBase(ABC):
                         color=(101, 122, 231),
                         tag=f"{self.id}_exec_status",
                     )
-                # Status text showing node ID (last 8 characters)
-                dpg.add_text(
-                    default_value="-", tag=f"{self.id}_state", color=(86, 145, 193)
-                )
 
     def node_configure(self) -> None:
         """

@@ -1,4 +1,4 @@
-from .nodes import *
+from .executor import *
 
 class LighthouseApp:
     """
@@ -37,6 +37,8 @@ class LighthouseApp:
         self.nodes: Dict[str, NodeBase] = {}
         self.edges: List[tuple] = []  # Stores (from_node, to_node) pairs
         self.connections: Dict = {}
+
+        self.executor = Executor()
 
         # Initialize DearPyGui context and viewport
         dpg.create_context()
@@ -535,11 +537,13 @@ class LighthouseApp:
 
         execution_order = self._topo_sort()
         console.print(execution_order)
+        execution_nodes = [self.nodes[i] for i in execution_order]
+
+        self.executor.create_execution(execution_nodes, self.connections)
 
         # Iterate to execute
         started = False
         for nid in execution_order:
-
             if self.nodes[nid].status == "PENDING":
                 self._execute_step(nid)
             elif self.nodes[nid].status == "ERROR":
@@ -555,6 +559,8 @@ class LighthouseApp:
                 self._execute_step(nid)
             else:
                 pass  # Should be unreachable
+
+        self.executor.end_execution()
 
     def _exec_node(self, node_id):
         console.print(f"ENGINE: Attempting to start execution from {node_id}")

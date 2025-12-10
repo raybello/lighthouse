@@ -1,10 +1,8 @@
-# Lighthouse Node Editor
-
+# Lighthouse Workflow Editor
 A visual, node-based workflow editor built with [DearPyGui](https://github.com/hoffstadt/DearPyGui) for creating, configuring, and connecting execution and trigger nodes. Supports HTTP requests, shell command execution, and chat/language model integrations with a drag-and-drop interface.
 
 
 ## Features
-
 - **Drag-and-drop node editor** with visual connections
 - **Trigger nodes** for starting workflows manually
 - **Execution nodes** for:
@@ -19,6 +17,6 @@ A visual, node-based workflow editor built with [DearPyGui](https://github.com/h
 
 ## Releasing new versions
 ``` bash
-git tag -a v[version] -F release_notes.md
+git tag -a v[version] -F CHANGELOG.md
 git push origin v[version]
 ```

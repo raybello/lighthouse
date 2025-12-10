@@ -1,5 +1,17 @@
 # Changelog
 
+## [unreleased] - 2025-12-09
+
+### Added
+- Fixed UI on older imgui versions
+
+### Changed
+
+### Fixed
+
+### Removed
+
+
 ## [1.0.13] - 2025-12-09
 
 ### Added
@@ -7,9 +19,10 @@
 ### Changed
 
 ### Fixed
-- Bumped dearpgygui up to 1.8.0
+- Bumped dearpygui up to 1.8.0
 
 ### Removed
+
 
 ## [1.0.12] - 2025-12-09
 
