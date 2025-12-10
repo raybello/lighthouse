@@ -44,6 +44,7 @@ jobs:
             cp dist/lighthouse release/lighthouse-macos
           else
             cp dist/lighthouse release/lighthouse-linux
+          fi
 
   release:
     needs: build
