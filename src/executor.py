@@ -1,4 +1,5 @@
 from .nodes import *
+from .expression_engine import ExpressionEngine
 
 class Executor(object): 
     def __init__(self):
@@ -7,6 +8,10 @@ class Executor(object):
         self.node_inputs = {}
         self.node_outputs = {}
         self.connections = {}
+        
+        # Node context for expression evaluation
+        self.node_context = {}  # Maps node_id -> {"data": output_data}
+        self.expression_engine = ExpressionEngine(self.node_context)
         
         # Import and initialize logging service
         try:
@@ -122,3 +127,35 @@ class Executor(object):
         """Write a log message to a node's log file"""
         if self.logging_service:
             self.logging_service.log_to_node_file(node_id, level, message)
+    
+    def set_node_context(self, node_id, node_name, output_data):
+        """
+        Store node output in the context for expression evaluation.
+        
+        Args:
+            node_id: Unique ID of the node
+            node_name: Name of the node (for $node["Name"] references)
+            output_data: Output data from the node
+        """
+        # Store by both ID and name for flexible referencing
+        self.node_context[node_id] = {"data": output_data}
+        self.node_context[node_name] = {"data": output_data}
+        
+        # Update expression engine context
+        self.expression_engine.set_context(self.node_context)
+        
+        console.print(f"[cyan]Updated context for node {node_name} ({node_id})[/cyan]")
+    
+    def get_expression_engine(self):
+        """
+        Get the expression engine with current context.
+        
+        Returns:
+            ExpressionEngine instance
+        """
+        return self.expression_engine
+    
+    def clear_context(self):
+        """Clear the node context (called at start of new execution)."""
+        self.node_context = {}
+        self.expression_engine.set_context(self.node_context)

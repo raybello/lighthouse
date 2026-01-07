@@ -38,6 +38,9 @@ class LighthouseApp:
         self.edges: List[tuple] = []  # Stores (from_node, to_node) pairs
         self.connections: Dict = {}
 
+        # Store last outputs for context building
+        self.node_last_outputs: Dict[str, Dict[str, Any]] = {}
+
         self.executor = Executor()
 
         # Initialize DearPyGui context and viewport
@@ -261,7 +264,7 @@ class LighthouseApp:
                         tag="node_editor",
                     ):
                         pass
-                
+
                 # ================================================================
                 # Execution Logs Tab
                 # ================================================================
@@ -397,9 +400,9 @@ class LighthouseApp:
                     callback=lambda: self._refresh_execution_logs(),
                     width=80
                 )
-            
+
             dpg.add_separator()
-            
+
             # ----------------------------------------------------------------
             # Execution logs container (scrollable)
             # ----------------------------------------------------------------
@@ -413,18 +416,18 @@ class LighthouseApp:
                     tag="no_executions_text",
                     color=(150, 150, 155)
                 )
-    
+
     def _filter_executions(self, filter_type: str) -> None:
         """Filter execution logs by status."""
         console.print(f"Filtering executions by: {filter_type}")
         self._refresh_execution_logs(status_filter=filter_type if filter_type != "ALL" else None)
-    
+
     def _search_logs(self) -> None:
         """Search execution logs."""
         search_term = dpg.get_value("log_search_input")
         console.print(f"Searching logs for: {search_term}")
         # TODO: Implement search functionality
-    
+
     def _refresh_execution_logs(self, status_filter: str = None) -> None:
         """
         Refresh the execution logs display.
@@ -434,29 +437,29 @@ class LighthouseApp:
         """
         if not self.executor.logging_service:
             return
-        
+
         # Clear existing log entries (but keep the header)
         if dpg.does_item_exist("no_executions_text"):
             dpg.delete_item("no_executions_text")
-        
+
         # Get all children of the container except the filter controls
         children = dpg.get_item_children("execution_logs_container", slot=1)
         if children:
             for child in children:
                 if dpg.does_item_exist(child):
                     dpg.delete_item(child)
-        
+
         # Get execution history
         history = self.executor.logging_service.get_execution_history(
             limit=50,
             status_filter=status_filter
         )
-        
+
         # Also check for current running execution
         current_session = self.executor.logging_service.get_current_session()
         if current_session:
             history.insert(0, current_session)
-        
+
         if not history:
             dpg.add_text(
                 "No executions found.",
@@ -465,11 +468,11 @@ class LighthouseApp:
                 color=(150, 150, 155)
             )
             return
-        
+
         # Display each execution
         for exec_data in history:
             self._create_execution_log_entry(exec_data)
-    
+
     def _create_execution_log_entry(self, exec_data: Dict[str, Any]) -> None:
         """
         Create a collapsible execution log entry.
@@ -479,14 +482,14 @@ class LighthouseApp:
         """
         exec_id = exec_data["id"]
         status = exec_data["status"]
-        
+
         # Status icon and color
         status_icons = {
-            "INITIALIZING": "⏸️",
-            "RUNNING": "🟡",
-            "COMPLETED": "✅",
-            "FAILED": "❌",
-            "CANCELLED": "⏹️"
+            "INITIALIZING": "Pause",
+            "RUNNING": "Running",
+            "COMPLETED": "Completed",
+            "FAILED": "Failed",
+            "CANCELLED": "Cancelled"
         }
         status_colors = {
             "INITIALIZING": (150, 150, 150),
@@ -495,10 +498,10 @@ class LighthouseApp:
             "FAILED": (202, 74, 74),
             "CANCELLED": (150, 150, 150)
         }
-        
-        icon = status_icons.get(status, "⏸️")
+
+        icon = status_icons.get(status, "Pause")
         color = status_colors.get(status, (150, 150, 150))
-        
+
         # Format duration
         duration_str = "Running..."
         if exec_data.get("duration_seconds"):
@@ -507,10 +510,10 @@ class LighthouseApp:
                 duration_str = f"{duration/60:.1f}m"
             else:
                 duration_str = f"{duration:.1f}s"
-        
+
         # Create collapsible tree node for execution
         with dpg.tree_node(
-            label=f"{icon} {exec_id} | {status} | ⏱️ {duration_str}",
+            label=f"{icon} {exec_id} | {status} | {duration_str}",
             parent="execution_logs_container",
             tag=f"exec_tree_{exec_id}",
             default_open=False
@@ -528,18 +531,18 @@ class LighthouseApp:
                     f"Failed: {exec_data['nodes_failed']} nodes",
                     color=(202, 74, 74)
                 )
-            
+
             dpg.add_separator()
-            
+
             # Show node logs if available
             node_logs = exec_data.get("node_logs", [])
             if node_logs:
                 dpg.add_text("Node Executions:", color=(150, 150, 155))
                 for node_log in node_logs:
                     self._create_node_log_entry(exec_id, node_log)
-            
+
             dpg.add_separator()
-            
+
             # Buttons to view logs
             with dpg.group(horizontal=True):
                 dpg.add_button(
@@ -558,7 +561,7 @@ class LighthouseApp:
                     callback=lambda: self._open_log_directory(exec_data["log_directory"]),
                     width=150
                 )
-    
+
     def _create_node_log_entry(self, exec_id: str, node_log: Dict[str, Any]) -> None:
         """
         Create a node log entry display.
@@ -570,16 +573,16 @@ class LighthouseApp:
         node_id = node_log["node_id"]
         node_name = node_log["node_name"]
         status = node_log["status"]
-        
+
         # Status icon and color
-        status_icons = {"RUNNING": "🟡", "COMPLETED": "✅", "FAILED": "❌"}
-        icon = status_icons.get(status, "⏸️")
-        
+        status_icons = {"RUNNING": "Running", "COMPLETED": "Completed", "FAILED": "Failed"}
+        icon = status_icons.get(status, "Pause")
+
         # Format duration
         duration_str = "-"
         if node_log.get("duration_seconds"):
             duration_str = f"{node_log['duration_seconds']:.2f}s"
-        
+
         with dpg.tree_node(
             label=f"  {icon} {node_name} ({node_id[:8]}) | {duration_str}",
             tag=f"node_log_{exec_id}_{node_id}",
@@ -591,13 +594,13 @@ class LighthouseApp:
                     color=(202, 74, 74),
                     wrap=600
                 )
-            
+
             dpg.add_button(
                 label="View Node Log",
                 callback=lambda: self._view_log_file(exec_id, node_log["log_file"]),
                 width=150
             )
-    
+
     def _view_log_file(self, exec_id: str, filename: str) -> None:
         """
         View a log file in a modal window.
@@ -608,16 +611,16 @@ class LighthouseApp:
         """
         if not self.executor.logging_service:
             return
-        
+
         # Read log file content
         content = self.executor.logging_service.read_log_file(exec_id, filename)
-        
+
         # Create or update log viewer window
         viewer_tag = f"log_viewer_{exec_id}_{filename}"
-        
+
         if dpg.does_item_exist(viewer_tag):
             dpg.delete_item(viewer_tag)
-        
+
         with dpg.window(
             label=f"Log: {filename}",
             tag=viewer_tag,
@@ -639,7 +642,7 @@ class LighthouseApp:
                 callback=lambda: dpg.delete_item(viewer_tag),
                 width=-1
             )
-    
+
     def _open_log_directory(self, log_dir: str) -> None:
         """
         Open the log directory in the system file explorer.
@@ -649,7 +652,7 @@ class LighthouseApp:
         """
         import subprocess
         import sys
-        
+
         try:
             if sys.platform == "darwin":  # macOS
                 subprocess.run(["open", log_dir])
@@ -858,16 +861,35 @@ class LighthouseApp:
         )
 
         try:
+            # Get expression engine
+            expr_engine = self.executor.get_expression_engine()
+
+            # Resolve expressions in node state before execution
+            resolved_state = expr_engine.resolve_dict(node.state.copy())
+
+            # Temporarily replace node state with resolved values
+            original_state = node.state
+            node.state = resolved_state
+
             # Simulate execution time
-            time.sleep(3)
+            time.sleep(1)
 
             # Execute the node and capture output
             output = node.execute()
-            
+
+            # Restore original state (with expressions)
+            node.state = original_state
+
+            # Store node output in context for downstream nodes
+            self.executor.set_node_context(node_id, node.name, output.get("data", {}))
+
+            # Store last output for future context building
+            self.node_last_outputs[node_id] = output
+
             # Log node execution completion
             self.executor.log_node_end(node_id, "COMPLETED", output)
             self._set_exec_status(node_id, (83, 202, 74), "COMPLETED")
-            
+
         except Exception as e:
             # Log node execution failure
             error_msg = str(e)
@@ -877,11 +899,17 @@ class LighthouseApp:
 
     def _exec_graph(self, node_id):
 
+        # Clear context before starting new execution
+        self.executor.clear_context()
+
         execution_order = self._topo_sort()
         console.print(execution_order)
         execution_nodes = [self.nodes[i] for i in execution_order]
 
         self.executor.create_execution(execution_nodes, self.connections, node_id)
+
+        # First, build context from all completed nodes
+        self._build_context_from_completed_nodes(execution_order)
 
         # Iterate to execute
         started = False
@@ -903,6 +931,55 @@ class LighthouseApp:
                 pass  # Should be unreachable
 
         self.executor.end_execution()
+
+    def _build_context_from_completed_nodes(self, execution_order):
+        """
+        Build the execution context from all completed nodes.
+        
+        This ensures that expressions can reference outputs from nodes
+        that were executed in previous runs.
+        
+        Args:
+            execution_order: List of node IDs in execution order
+        """
+        console.print("[cyan]Building context from completed nodes...[/cyan]")
+
+        for nid in execution_order:
+            node = self.nodes[nid]
+
+            # If node is completed, use its stored output
+            if node.status == "COMPLETED":
+                try:
+                    # Get the stored last output
+                    if nid in self.node_last_outputs:
+                        output = self.node_last_outputs[nid]
+                        data = output.get("data", {})
+
+                        # Add to context
+                        self.executor.set_node_context(nid, node.name, data)
+
+                        console.print(f"[cyan]Added to context: {node.name} ({nid[:8]})[/cyan]")
+                    else:
+                        # No stored output, try to execute the node
+                        output = node.execute()
+                        data = output.get("data", {})
+
+                        # Add to context
+                        self.executor.set_node_context(nid, node.name, data)
+
+                        # Store the output for future use
+                        self.node_last_outputs[nid] = output
+
+                        console.print(f"[cyan]Executed and added to context: {node.name} ({nid[:8]})[/cyan]")
+
+                except Exception as e:
+                    console.print(f"[yellow]Warning: Could not get output from {node.name} ({nid[:8]}): {e}[/yellow]")
+                    # Add empty data to context to prevent expression errors
+                    self.executor.set_node_context(nid, node.name, {})
+
+        console.print(
+            f"[cyan]Context built with {len(self.executor.node_context)} nodes - {self.executor.node_context}[/cyan]"
+        )
 
     def _exec_node(self, node_id):
         console.print(f"ENGINE: Attempting to start execution from {node_id}")

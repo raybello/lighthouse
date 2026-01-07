@@ -358,12 +358,15 @@ class NodeBase(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def execute(self) -> None:
+    def execute(self) -> Dict[str, Any]:
         """
         Execute the node's primary function.
 
         Must be implemented by subclasses to define the node's
         behavior when the Execute button is clicked.
+        
+        Returns:
+            Dictionary with node output data: {"data": {...}}
         """
         raise NotImplementedError
 
