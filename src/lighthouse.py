@@ -220,44 +220,53 @@ class LighthouseApp:
         def print_me(sender):
             print(f"Menu Item: {sender}")
 
-        with dpg.viewport_menu_bar():
-            with dpg.menu(label="File"):
-                dpg.add_menu_item(label="Save", callback=print_me)
-                dpg.add_menu_item(label="Exit", callback=dpg.destroy_context)
+        # with dpg.viewport_menu_bar():
+        #     with dpg.menu(label="File"):
+        #         dpg.add_menu_item(label="Save", callback=print_me)
+        #         dpg.add_menu_item(label="Exit", callback=dpg.destroy_context)
 
-                with dpg.menu(label="Settings"):
-                    dpg.add_menu_item(label="Setting 1", callback=print_me, check=True)
-                    dpg.add_menu_item(label="Setting 2", callback=print_me)
+        #         with dpg.menu(label="Settings"):
+        #             dpg.add_menu_item(label="Setting 1", callback=print_me, check=True)
+        #             dpg.add_menu_item(label="Setting 2", callback=print_me)
 
-            with dpg.menu(label="Widget Items"):
-                dpg.add_checkbox(label="Pick Me", callback=print_me)
-                dpg.add_button(label="Press Me", callback=print_me)
-                dpg.add_color_picker(label="Color Me", callback=print_me)
+        #     with dpg.menu(label="Widget Items"):
+        #         dpg.add_checkbox(label="Pick Me", callback=print_me)
+        #         dpg.add_button(label="Press Me", callback=print_me)
+        #         dpg.add_color_picker(label="Color Me", callback=print_me)
 
-            with dpg.menu(label="Help"):
-                dpg.add_text("Usage Tips")
-                dpg.add_text("  Left-Click to add new nodes")
-                dpg.add_text("  Ctrl-Click to delete node connection")
-                dpg.add_separator()
-                dpg.add_text("About")
-                dpg.add_text("  RayB - Dec '25")
-                dpg.add_text("  Version: 0.1")
+        #     with dpg.menu(label="Help"):
+        #         dpg.add_text("Usage Tips")
+        #         dpg.add_text("  Left-Click to add new nodes")
+        #         dpg.add_text("  Ctrl-Click to delete node connection")
+        #         dpg.add_separator()
+        #         dpg.add_text("About")
+        #         dpg.add_text("  RayB - Dec '25")
+        #         dpg.add_text("  Version: 0.1")
 
         # ----------------------------------------------------------------
-        # Primary window containing the node editor
+        # Primary window containing tabs for Node Editor and Execution Logs
         # ----------------------------------------------------------------
         with dpg.window(label=self.title, tag="primary_window"):
-
-            # Node editor with minimap enabled
-            with dpg.node_editor(
-                callback=self.link_callback,
-                delink_callback=self.delink_callback,
-                minimap=True,
-                # menubar=True,
-                minimap_location=dpg.mvNodeMiniMap_Location_BottomRight,
-                tag="node_editor",
-            ):
-                pass
+            with dpg.tab_bar(tag="main_tab_bar"):
+                # ================================================================
+                # Node Editor Tab
+                # ================================================================
+                with dpg.tab(label="Node Editor", tag="node_editor_tab"):
+                    # Node editor with minimap enabled
+                    with dpg.node_editor(
+                        callback=self.link_callback,
+                        delink_callback=self.delink_callback,
+                        minimap=True,
+                        minimap_location=dpg.mvNodeMiniMap_Location_BottomRight,
+                        tag="node_editor",
+                    ):
+                        pass
+                
+                # ================================================================
+                # Execution Logs Tab
+                # ================================================================
+                with dpg.tab(label="Execution Logs", tag="execution_logs_tab"):
+                    self._setup_execution_logs_ui()
         # ----------------------------------------------------------------
         # Context menu for adding new nodes (shown on right-click)
         # ----------------------------------------------------------------
@@ -337,6 +346,319 @@ class LighthouseApp:
                     width=200,
                     tag=f"{exec_type.name}_add_btn",
                 )
+
+    def _setup_execution_logs_ui(self) -> None:
+        """
+        Create the Execution Logs tab UI.
+        
+        Displays execution history with hierarchical log display,
+        real-time status updates, and log filtering capabilities.
+        """
+        with dpg.group(horizontal=False):
+            # ----------------------------------------------------------------
+            # Header with controls
+            # ----------------------------------------------------------------
+            with dpg.group(horizontal=True):
+                dpg.add_text("Filter:", color=(150, 150, 155))
+                dpg.add_button(
+                    label="All",
+                    tag="filter_all_btn",
+                    callback=lambda: self._filter_executions("ALL"),
+                    width=80
+                )
+                dpg.add_button(
+                    label="Running",
+                    tag="filter_running_btn",
+                    callback=lambda: self._filter_executions("RUNNING"),
+                    width=80
+                )
+                dpg.add_button(
+                    label="Completed",
+                    tag="filter_completed_btn",
+                    callback=lambda: self._filter_executions("COMPLETED"),
+                    width=80
+                )
+                dpg.add_button(
+                    label="Failed",
+                    tag="filter_failed_btn",
+                    callback=lambda: self._filter_executions("FAILED"),
+                    width=80
+                )
+                dpg.add_input_text(
+                    label="Search",
+                    tag="log_search_input",
+                    hint="Search logs...",
+                    width=300,
+                    callback=lambda: self._search_logs()
+                )
+                dpg.add_button(
+                    label="Refresh",
+                    tag="refresh_logs_btn",
+                    callback=lambda: self._refresh_execution_logs(),
+                    width=80
+                )
+            
+            dpg.add_separator()
+            
+            # ----------------------------------------------------------------
+            # Execution logs container (scrollable)
+            # ----------------------------------------------------------------
+            with dpg.child_window(
+                tag="execution_logs_container",
+                height=-1,
+                border=True
+            ):
+                dpg.add_text(
+                    "No executions yet. Execute a workflow to see logs here.",
+                    tag="no_executions_text",
+                    color=(150, 150, 155)
+                )
+    
+    def _filter_executions(self, filter_type: str) -> None:
+        """Filter execution logs by status."""
+        console.print(f"Filtering executions by: {filter_type}")
+        self._refresh_execution_logs(status_filter=filter_type if filter_type != "ALL" else None)
+    
+    def _search_logs(self) -> None:
+        """Search execution logs."""
+        search_term = dpg.get_value("log_search_input")
+        console.print(f"Searching logs for: {search_term}")
+        # TODO: Implement search functionality
+    
+    def _refresh_execution_logs(self, status_filter: str = None) -> None:
+        """
+        Refresh the execution logs display.
+        
+        Args:
+            status_filter: Optional status filter (RUNNING, COMPLETED, FAILED)
+        """
+        if not self.executor.logging_service:
+            return
+        
+        # Clear existing log entries (but keep the header)
+        if dpg.does_item_exist("no_executions_text"):
+            dpg.delete_item("no_executions_text")
+        
+        # Get all children of the container except the filter controls
+        children = dpg.get_item_children("execution_logs_container", slot=1)
+        if children:
+            for child in children:
+                if dpg.does_item_exist(child):
+                    dpg.delete_item(child)
+        
+        # Get execution history
+        history = self.executor.logging_service.get_execution_history(
+            limit=50,
+            status_filter=status_filter
+        )
+        
+        # Also check for current running execution
+        current_session = self.executor.logging_service.get_current_session()
+        if current_session:
+            history.insert(0, current_session)
+        
+        if not history:
+            dpg.add_text(
+                "No executions found.",
+                parent="execution_logs_container",
+                tag="no_executions_text",
+                color=(150, 150, 155)
+            )
+            return
+        
+        # Display each execution
+        for exec_data in history:
+            self._create_execution_log_entry(exec_data)
+    
+    def _create_execution_log_entry(self, exec_data: Dict[str, Any]) -> None:
+        """
+        Create a collapsible execution log entry.
+        
+        Args:
+            exec_data: Execution metadata dictionary
+        """
+        exec_id = exec_data["id"]
+        status = exec_data["status"]
+        
+        # Status icon and color
+        status_icons = {
+            "INITIALIZING": "⏸️",
+            "RUNNING": "🟡",
+            "COMPLETED": "✅",
+            "FAILED": "❌",
+            "CANCELLED": "⏹️"
+        }
+        status_colors = {
+            "INITIALIZING": (150, 150, 150),
+            "RUNNING": (194, 188, 81),
+            "COMPLETED": (83, 202, 74),
+            "FAILED": (202, 74, 74),
+            "CANCELLED": (150, 150, 150)
+        }
+        
+        icon = status_icons.get(status, "⏸️")
+        color = status_colors.get(status, (150, 150, 150))
+        
+        # Format duration
+        duration_str = "Running..."
+        if exec_data.get("duration_seconds"):
+            duration = exec_data["duration_seconds"]
+            if duration >= 60:
+                duration_str = f"{duration/60:.1f}m"
+            else:
+                duration_str = f"{duration:.1f}s"
+        
+        # Create collapsible tree node for execution
+        with dpg.tree_node(
+            label=f"{icon} {exec_id} | {status} | ⏱️ {duration_str}",
+            parent="execution_logs_container",
+            tag=f"exec_tree_{exec_id}",
+            default_open=False
+        ):
+            dpg.add_text(
+                f"Triggered by: {exec_data['triggered_by']}",
+                color=(120, 180, 255)
+            )
+            dpg.add_text(
+                f"Nodes: {exec_data['nodes_executed']}/{exec_data['node_count']} executed",
+                color=(120, 180, 255)
+            )
+            if exec_data.get("nodes_failed", 0) > 0:
+                dpg.add_text(
+                    f"Failed: {exec_data['nodes_failed']} nodes",
+                    color=(202, 74, 74)
+                )
+            
+            dpg.add_separator()
+            
+            # Show node logs if available
+            node_logs = exec_data.get("node_logs", [])
+            if node_logs:
+                dpg.add_text("Node Executions:", color=(150, 150, 155))
+                for node_log in node_logs:
+                    self._create_node_log_entry(exec_id, node_log)
+            
+            dpg.add_separator()
+            
+            # Buttons to view logs
+            with dpg.group(horizontal=True):
+                dpg.add_button(
+                    label="View Summary Log",
+                    callback=lambda: self._view_log_file(exec_id, "execution_summary.log"),
+                    width=150
+                )
+                if exec_data.get("nodes_failed", 0) > 0:
+                    dpg.add_button(
+                        label="View Errors",
+                        callback=lambda: self._view_log_file(exec_id, "errors.log"),
+                        width=150
+                    )
+                dpg.add_button(
+                    label="Open Log Directory",
+                    callback=lambda: self._open_log_directory(exec_data["log_directory"]),
+                    width=150
+                )
+    
+    def _create_node_log_entry(self, exec_id: str, node_log: Dict[str, Any]) -> None:
+        """
+        Create a node log entry display.
+        
+        Args:
+            exec_id: Execution ID
+            node_log: Node log metadata dictionary
+        """
+        node_id = node_log["node_id"]
+        node_name = node_log["node_name"]
+        status = node_log["status"]
+        
+        # Status icon and color
+        status_icons = {"RUNNING": "🟡", "COMPLETED": "✅", "FAILED": "❌"}
+        icon = status_icons.get(status, "⏸️")
+        
+        # Format duration
+        duration_str = "-"
+        if node_log.get("duration_seconds"):
+            duration_str = f"{node_log['duration_seconds']:.2f}s"
+        
+        with dpg.tree_node(
+            label=f"  {icon} {node_name} ({node_id[:8]}) | {duration_str}",
+            tag=f"node_log_{exec_id}_{node_id}",
+            default_open=False
+        ):
+            if node_log.get("error_message"):
+                dpg.add_text(
+                    f"Error: {node_log['error_message']}",
+                    color=(202, 74, 74),
+                    wrap=600
+                )
+            
+            dpg.add_button(
+                label="View Node Log",
+                callback=lambda: self._view_log_file(exec_id, node_log["log_file"]),
+                width=150
+            )
+    
+    def _view_log_file(self, exec_id: str, filename: str) -> None:
+        """
+        View a log file in a modal window.
+        
+        Args:
+            exec_id: Execution ID
+            filename: Name of the log file
+        """
+        if not self.executor.logging_service:
+            return
+        
+        # Read log file content
+        content = self.executor.logging_service.read_log_file(exec_id, filename)
+        
+        # Create or update log viewer window
+        viewer_tag = f"log_viewer_{exec_id}_{filename}"
+        
+        if dpg.does_item_exist(viewer_tag):
+            dpg.delete_item(viewer_tag)
+        
+        with dpg.window(
+            label=f"Log: {filename}",
+            tag=viewer_tag,
+            modal=False,
+            show=True,
+            width=800,
+            height=600,
+            pos=[200, 100]
+        ):
+            dpg.add_input_text(
+                default_value=content,
+                multiline=True,
+                readonly=True,
+                width=-1,
+                height=-50
+            )
+            dpg.add_button(
+                label="Close",
+                callback=lambda: dpg.delete_item(viewer_tag),
+                width=-1
+            )
+    
+    def _open_log_directory(self, log_dir: str) -> None:
+        """
+        Open the log directory in the system file explorer.
+        
+        Args:
+            log_dir: Path to the log directory
+        """
+        import subprocess
+        import sys
+        
+        try:
+            if sys.platform == "darwin":  # macOS
+                subprocess.run(["open", log_dir])
+            elif sys.platform == "win32":  # Windows
+                subprocess.run(["explorer", log_dir])
+            else:  # Linux
+                subprocess.run(["xdg-open", log_dir])
+        except Exception as e:
+            console.print(f"[red]Failed to open directory: {e}[/red]")
 
     def _setup_handlers(self) -> None:
         """
@@ -525,13 +847,33 @@ class LighthouseApp:
         return result
 
     def _execute_step(self, node_id):
+        node = self.nodes[node_id]
         self._set_exec_status(node_id, (194, 188, 81), "RUNNING")
 
-        time.sleep(3)
+        # Log node execution start
+        self.executor.log_node_start(
+            node_id,
+            node.name,
+            node.__class__.__name__
+        )
 
-        self.nodes[node_id].execute()
+        try:
+            # Simulate execution time
+            time.sleep(3)
 
-        self._set_exec_status(node_id, (83, 202, 74), "COMPLETED")
+            # Execute the node and capture output
+            output = node.execute()
+            
+            # Log node execution completion
+            self.executor.log_node_end(node_id, "COMPLETED", output)
+            self._set_exec_status(node_id, (83, 202, 74), "COMPLETED")
+            
+        except Exception as e:
+            # Log node execution failure
+            error_msg = str(e)
+            self.executor.log_node_end(node_id, "FAILED", error_message=error_msg)
+            self._set_exec_status(node_id, (202, 74, 74), "ERROR")
+            console.print(f"[red]Node {node_id} failed: {error_msg}[/red]")
 
     def _exec_graph(self, node_id):
 
