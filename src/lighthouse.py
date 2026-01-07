@@ -539,7 +539,7 @@ class LighthouseApp:
         console.print(execution_order)
         execution_nodes = [self.nodes[i] for i in execution_order]
 
-        self.executor.create_execution(execution_nodes, self.connections)
+        self.executor.create_execution(execution_nodes, self.connections, node_id)
 
         # Iterate to execute
         started = False

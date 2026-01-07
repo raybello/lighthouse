@@ -17,9 +17,7 @@ class Executor(object):
             self.node_outputs[id].append(item)
 
     def set_exec_status(self, node_id, color, status):
-
         self.nodes[node_id].status = status
-
         dpg.set_value(item=f"{node_id}_exec_status", value=status)
         dpg.configure_item(
             item=f"{node_id}_exec_status",
@@ -34,7 +32,7 @@ class Executor(object):
         else:
             dpg.configure_item(item=f"{node_id}_loading", show=False)
 
-    def create_execution(self, nodes, connections):
+    def create_execution(self, nodes, connections, triggered_by):
         self.execution = {
             "id": str(uuid.uuid4())[-8:],
             "nodes": nodes,
@@ -43,6 +41,7 @@ class Executor(object):
             "outputs": {},
             "createdAt": time.time(),
             "endedAt": None,
+            "triggeredBy": triggered_by,
             "traces":[]
         }
         self.connections = connections
