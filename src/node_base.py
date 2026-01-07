@@ -46,13 +46,16 @@ class NodeBase(ABC):
         fields (Dict[str, Dict[str, Any]]): Field definitions with types and defaults
     """
 
-    def __init__(self, name: str, parent: str, exec_cb, delete_cb) -> None:
+    def __init__(self, name: str, parent: str, exec_cb, delete_cb, log_cb=None) -> None:
         """
         Initialize a new node instance.
 
         Args:
             name: Display name for the node (shown in editor)
             parent: Tag of the parent DearPyGui container (node editor)
+            exec_cb: Callback for node execution
+            delete_cb: Callback for node deletion
+            log_cb: Callback for logging during execution (node_id, level, message)
         """
         self.id = str(uuid.uuid4())[-8:]
         print(self.id)
@@ -61,6 +64,7 @@ class NodeBase(ABC):
         self.parent = parent
         self.exec_callback = exec_cb
         self.delete_cb = delete_cb
+        self.log_cb = log_cb
         self.status = "PENDING"
         self.state: Dict[str, Any] = {}
         self.fields: Dict[str, Dict[str, Any]] = {}
@@ -391,3 +395,27 @@ class NodeBase(ABC):
 
     def set_callback(self, callback):
         self.exec_callback = callback
+
+    def log(self, level: str, message: str) -> None:
+        """
+        Log a message during node execution.
+
+        Forwards the message to the logging service via callback if available,
+        otherwise falls back to console output.
+
+        Args:
+            level: Log level (INFO, DEBUG, WARN, ERROR)
+            message: Log message
+        """
+        if self.log_cb:
+            self.log_cb(self.id, level, message)
+        else:
+            # Fallback to console
+            color_map = {
+                "INFO": "cyan",
+                "DEBUG": "dim",
+                "WARN": "yellow",
+                "ERROR": "red"
+            }
+            color = color_map.get(level, "white")
+            console.print(f"[{color}][{level}] {self.name}: {message}[/{color}]")

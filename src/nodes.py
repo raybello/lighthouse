@@ -55,15 +55,16 @@ class ManualTriggerNode(NodeBase):
     It can be executed manually to trigger downstream nodes.
     """
 
-    def __init__(self, name: str, parent: str, exec_cb, delete_cb) -> None:
+    def __init__(self, name: str, parent: str, exec_cb, delete_cb, log_cb=None) -> None:
         """
         Initialize a Manual Trigger node.
 
         Args:
             name: Display name for the node
             parent: Tag of the parent node editor
+            log_cb: Callback for logging during execution
         """
-        super().__init__(name, parent, exec_cb, delete_cb)
+        super().__init__(name, parent, exec_cb, delete_cb, log_cb)
 
         # Define node fields
         self.fields = {
@@ -96,22 +97,23 @@ class ManualTriggerNode(NodeBase):
 class InputNode(NodeBase):
     """
     Input node for providing static data to workflows.
-    
+
     This node allows you to define data that can be referenced by
     downstream nodes using expressions like {{$node["Input"].data.name}}
-    
+
     Uses individual property/value fields for better UX.
     """
-    
-    def __init__(self, name: str, parent: str, exec_cb, delete_cb) -> None:
+
+    def __init__(self, name: str, parent: str, exec_cb, delete_cb, log_cb=None) -> None:
         """
         Initialize an Input node.
-        
+
         Args:
             name: Display name for the node
             parent: Tag of the parent node editor
+            log_cb: Callback for logging during execution
         """
-        super().__init__(name, parent, exec_cb, delete_cb)
+        super().__init__(name, parent, exec_cb, delete_cb, log_cb)
         
         # Store input properties as a list of dicts
         self.input_properties = [
@@ -485,15 +487,16 @@ class HTTPRequestNode(NodeBase):
         timeout: Request timeout in seconds
     """
 
-    def __init__(self, name: str, parent: str, exec_cb, delete_cb) -> None:
+    def __init__(self, name: str, parent: str, exec_cb, delete_cb, log_cb=None) -> None:
         """
         Initialize an HTTP Request node.
 
         Args:
             name: Display name for the node
             parent: Tag of the parent node editor
+            log_cb: Callback for logging during execution
         """
-        super().__init__(name, parent, exec_cb, delete_cb)
+        super().__init__(name, parent, exec_cb, delete_cb, log_cb)
 
         # Define the fields for this node type
         self.fields = {
@@ -549,12 +552,65 @@ class HTTPRequestNode(NodeBase):
 
     def execute(self) -> Dict[str, Any]:
         """
-        Execute the HTTP request (placeholder implementation).
+        Execute the HTTP request.
 
         Returns:
-            Current node state with request configuration
+            Dictionary with response data including status_code, headers, body, url
         """
-        return self.state
+        import requests
+        import json as json_module
+
+        url = self.state.get("url", "")
+        method = self.state.get("type", "GET")
+        body = self.state.get("body", "{}")
+        timeout = self.state.get("timeout", 30)
+
+        self.log("INFO", f"Starting {method} request to {url}")
+
+        try:
+            # Parse body as JSON for POST/PUT/PATCH
+            json_body = None
+            if method in ["POST", "PUT", "PATCH"] and body and body.strip() != "{}":
+                try:
+                    json_body = json_module.loads(body)
+                    self.log("DEBUG", f"Request body: {json_body}")
+                except json_module.JSONDecodeError as e:
+                    self.log("WARN", f"Invalid JSON body, sending as raw: {e}")
+
+            response = requests.request(
+                method=method,
+                url=url,
+                json=json_body,
+                timeout=timeout
+            )
+
+            self.log("INFO", f"Response status: {response.status_code}")
+
+            # Try to parse JSON response
+            try:
+                response_data = response.json()
+            except:
+                response_data = response.text
+                self.log("DEBUG", "Response is not JSON, returning as text")
+
+            return {
+                "data": {
+                    "status_code": response.status_code,
+                    "headers": dict(response.headers),
+                    "body": response_data,
+                    "url": response.url
+                }
+            }
+
+        except requests.Timeout:
+            self.log("ERROR", f"Request timed out after {timeout}s")
+            return {"data": {"error": "Timeout", "status_code": None, "body": None}}
+        except requests.ConnectionError as e:
+            self.log("ERROR", f"Connection error: {str(e)}")
+            return {"data": {"error": f"Connection error: {str(e)}", "status_code": None, "body": None}}
+        except Exception as e:
+            self.log("ERROR", f"Request failed: {str(e)}")
+            return {"data": {"error": str(e), "status_code": None, "body": None}}
 
 
 class ExecuteCommandNode(NodeBase):
@@ -569,15 +625,16 @@ class ExecuteCommandNode(NodeBase):
         log_file: Path to log file for command output
     """
 
-    def __init__(self, name: str, parent: str, exec_cb, delete_cb) -> None:
+    def __init__(self, name: str, parent: str, exec_cb, delete_cb, log_cb=None) -> None:
         """
         Initialize an Execute Command node.
 
         Args:
             name: Display name for the node
             parent: Tag of the parent node editor
+            log_cb: Callback for logging during execution
         """
-        super().__init__(name, parent, exec_cb, delete_cb)
+        super().__init__(name, parent, exec_cb, delete_cb, log_cb)
 
         # Define node fields with default command
         self.fields = {
@@ -622,40 +679,92 @@ class ExecuteCommandNode(NodeBase):
 
     def execute(self) -> Dict[str, Any]:
         """
-        Execute the shell command (placeholder implementation).
+        Execute the shell command.
 
         Returns:
-            Current node state with command configuration
+            Dictionary with stdout, stderr, exit_code, and success status
         """
-        console.print(
-            f"[yellow]Executing command: {self.state['command']}\n"
-            f"Saving to: {self.state['log_file']}[/yellow]"
-        )
-        return self.state
+        import subprocess
+
+        command = self.state.get("command", "")
+        log_file = self.state.get("log_file", "")
+
+        self.log("INFO", f"Executing command: {command}")
+
+        try:
+            # Run command with shell=True for full shell support
+            result = subprocess.run(
+                command,
+                shell=True,
+                capture_output=True,
+                text=True,
+                timeout=60  # 1 minute timeout
+            )
+
+            stdout = result.stdout
+            stderr = result.stderr
+            exit_code = result.returncode
+
+            self.log("INFO", f"Command completed with exit code: {exit_code}")
+            if stdout:
+                # Log first 500 chars of stdout
+                self.log("DEBUG", f"stdout: {stdout[:500]}")
+            if stderr:
+                # Log first 500 chars of stderr
+                self.log("WARN", f"stderr: {stderr[:500]}")
+
+            # Optionally write to log file
+            if log_file:
+                try:
+                    with open(log_file, 'w') as f:
+                        f.write(f"=== COMMAND ===\n{command}\n\n")
+                        f.write(f"=== EXIT CODE ===\n{exit_code}\n\n")
+                        f.write(f"=== STDOUT ===\n{stdout}\n\n")
+                        f.write(f"=== STDERR ===\n{stderr}\n")
+                    self.log("INFO", f"Output saved to: {log_file}")
+                except Exception as e:
+                    self.log("WARN", f"Failed to write log file: {e}")
+
+            return {
+                "data": {
+                    "stdout": stdout,
+                    "stderr": stderr,
+                    "exit_code": exit_code,
+                    "success": exit_code == 0
+                }
+            }
+
+        except subprocess.TimeoutExpired:
+            self.log("ERROR", "Command timed out after 60 seconds")
+            return {"data": {"error": "Timeout", "exit_code": -1, "success": False, "stdout": "", "stderr": ""}}
+        except Exception as e:
+            self.log("ERROR", f"Command failed: {str(e)}")
+            return {"data": {"error": str(e), "exit_code": -1, "success": False, "stdout": "", "stderr": ""}}
 
 
 class CalculatorNode(NodeBase):
     """
     Node for performing arithmetic calculations with expression support.
-    
+
     Supports dynamic input from previous nodes using {{}} expression syntax.
     Can perform basic arithmetic operations: +, -, *, /, %
-    
+
     Fields:
         field_a: First operand (supports expressions)
         field_b: Second operand (supports expressions)
         operation: Arithmetic operation to perform
     """
-    
-    def __init__(self, name: str, parent: str, exec_cb, delete_cb) -> None:
+
+    def __init__(self, name: str, parent: str, exec_cb, delete_cb, log_cb=None) -> None:
         """
         Initialize a Calculator node.
-        
+
         Args:
             name: Display name for the node
             parent: Tag of the parent node editor
+            log_cb: Callback for logging during execution
         """
-        super().__init__(name, parent, exec_cb, delete_cb)
+        super().__init__(name, parent, exec_cb, delete_cb, log_cb)
         
         # Define node fields
         self.fields = {
@@ -752,22 +861,23 @@ class CalculatorNode(NodeBase):
 class FormNode(NodeBase):
     """
     Node for creating dynamic forms with fields that accept expressions.
-    
+
     Supports multiple field types: string, number, boolean, object
     Each field can contain {{}} expressions to reference previous node outputs.
-    
+
     Uses individual text fields and dropdowns for better UX.
     """
-    
-    def __init__(self, name: str, parent: str, exec_cb, delete_cb) -> None:
+
+    def __init__(self, name: str, parent: str, exec_cb, delete_cb, log_cb=None) -> None:
         """
         Initialize a Form node.
-        
+
         Args:
             name: Display name for the node
             parent: Tag of the parent node editor
+            log_cb: Callback for logging during execution
         """
-        super().__init__(name, parent, exec_cb, delete_cb)
+        super().__init__(name, parent, exec_cb, delete_cb, log_cb)
         
         # Store form fields as a list of dicts
         self.form_fields = [
@@ -1169,15 +1279,16 @@ class ChatModelNode(NodeBase):
         query: User query to send to the model
     """
 
-    def __init__(self, name: str, parent: str, exec_cb, delete_cb) -> None:
+    def __init__(self, name: str, parent: str, exec_cb, delete_cb, log_cb=None) -> None:
         """
         Initialize a Chat Model node.
 
         Args:
             name: Display name for the node
             parent: Tag of the parent node editor
+            log_cb: Callback for logging during execution
         """
-        super().__init__(name, parent, exec_cb, delete_cb)
+        super().__init__(name, parent, exec_cb, delete_cb, log_cb)
 
         # Define node fields with model configuration
         self.fields = {
@@ -1252,12 +1363,278 @@ class ChatModelNode(NodeBase):
 
     def execute(self) -> Dict[str, Any]:
         """
-        Execute the chat model query (placeholder implementation).
+        Execute the chat model query using OpenAI-compatible API.
+
+        Works with local LLMs (Ollama, LM Studio) and cloud providers.
 
         Returns:
-            Current node state with model configuration
+            Dictionary with response text, model info, and usage stats
         """
-        return self.state
+        import requests
+
+        model = self.state.get("model", "gemma-3")
+        base_url = self.state.get("base_url", "http://localhost:8080")
+        temperature = self.state.get("temperature", 0.1)
+        max_tokens = self.state.get("max_tokens", 500)
+        timeout = self.state.get("timeout", 30)
+        system_prompt = self.state.get("system_prompt", "")
+        query = self.state.get("query", "")
+
+        self.log("INFO", f"Calling model {model} at {base_url}")
+
+        try:
+            # Build messages
+            messages = []
+            if system_prompt:
+                messages.append({"role": "system", "content": system_prompt})
+            messages.append({"role": "user", "content": query})
+
+            self.log("DEBUG", f"Query: {query[:100]}...")
+
+            # Make API call (OpenAI-compatible format)
+            response = requests.post(
+                f"{base_url.rstrip('/')}/v1/chat/completions",
+                json={
+                    "model": model,
+                    "messages": messages,
+                    "temperature": temperature,
+                    "max_tokens": max_tokens
+                },
+                timeout=timeout
+            )
+
+            response.raise_for_status()
+            result = response.json()
+
+            # Extract response text
+            response_text = result["choices"][0]["message"]["content"]
+            usage = result.get("usage", {})
+
+            self.log("INFO", f"Model response received ({len(response_text)} chars)")
+            self.log("DEBUG", f"Usage: {usage}")
+
+            return {
+                "data": {
+                    "response": response_text,
+                    "model": model,
+                    "usage": usage
+                }
+            }
+
+        except requests.Timeout:
+            self.log("ERROR", f"Model request timed out after {timeout}s")
+            return {"data": {"error": "Timeout", "response": None, "model": model}}
+        except requests.ConnectionError as e:
+            self.log("ERROR", f"Connection error: {str(e)}")
+            return {"data": {"error": f"Connection error: {str(e)}", "response": None, "model": model}}
+        except requests.HTTPError as e:
+            self.log("ERROR", f"HTTP error: {str(e)}")
+            return {"data": {"error": f"HTTP error: {str(e)}", "response": None, "model": model}}
+        except KeyError as e:
+            self.log("ERROR", f"Unexpected response format: missing {e}")
+            return {"data": {"error": f"Unexpected response format", "response": None, "model": model}}
+        except Exception as e:
+            self.log("ERROR", f"Model request failed: {str(e)}")
+            return {"data": {"error": str(e), "response": None, "model": model}}
+
+
+# ============================================================================
+# Safe Builtins for CodeNode
+# ============================================================================
+
+CODE_NODE_SAFE_BUILTINS = {
+    # Type conversions
+    'int': int,
+    'float': float,
+    'str': str,
+    'bool': bool,
+    'list': list,
+    'dict': dict,
+    'tuple': tuple,
+    'set': set,
+    # Built-in functions
+    'len': len,
+    'range': range,
+    'sum': sum,
+    'min': min,
+    'max': max,
+    'abs': abs,
+    'round': round,
+    'sorted': sorted,
+    'reversed': reversed,
+    'enumerate': enumerate,
+    'zip': zip,
+    'any': any,
+    'all': all,
+    'print': print,
+    'isinstance': isinstance,
+    'type': type,
+    # Iteration
+    'map': map,
+    'filter': filter,
+    # Constants
+    'True': True,
+    'False': False,
+    'None': None,
+}
+
+
+class CodeNode(NodeBase):
+    """
+    Node for executing sandboxed Python code with expression support.
+
+    Code can reference previous node outputs using {{$node["Name"].data.property}}.
+    Execution is sandboxed with limited builtins and timeout protection.
+
+    The code should set a 'result' variable to return output.
+    """
+
+    def __init__(self, name: str, parent: str, exec_cb, delete_cb, log_cb=None) -> None:
+        """
+        Initialize a Code node.
+
+        Args:
+            name: Display name for the node
+            parent: Tag of the parent node editor
+            log_cb: Callback for logging during execution
+        """
+        super().__init__(name, parent, exec_cb, delete_cb, log_cb)
+
+        self.fields = {
+            "code": {
+                "value": "# Write Python code here\n# Use 'result' variable for output\n# Example: result = sum([1, 2, 3, 4, 5])\n\nresult = 42",
+                "type": LongString,
+                "label": "Python Code",
+            },
+        }
+
+        self.node_ui()
+        self.node_configure()
+        self.setup_node_inspector()
+
+    def save(self) -> None:
+        """Save changes from inspector inputs back to node state."""
+        for field_key in self.fields.keys():
+            input_tag = f"{self.id}_{field_key}"
+            self.state[field_key] = dpg.get_value(item=input_tag)
+
+        # Show code preview in node
+        code = self.state.get("code", "")
+        lines = [l for l in code.strip().split('\n') if l.strip() and not l.strip().startswith('#')]
+        preview = lines[0][:25] + "..." if lines else "Empty"
+        dpg.set_value(f"{self.id}_state", value=f"Code: {preview}")
+
+        console.print(f"[cyan]Saved code node: {self.id[-8:]}[/cyan]")
+        self.close_inspector()
+
+    def _validate_code_safety(self, code: str):
+        """
+        Parse and validate code safety using AST.
+
+        Args:
+            code: Python code string to validate
+
+        Returns:
+            AST tree if valid
+
+        Raises:
+            ValueError: If code contains unsafe operations
+            SyntaxError: If code has syntax errors
+        """
+        import ast
+
+        tree = ast.parse(code)
+
+        for node in ast.walk(tree):
+            # Reject imports
+            if isinstance(node, (ast.Import, ast.ImportFrom)):
+                raise ValueError("Imports not allowed in CodeNode")
+
+            # Reject dangerous function calls
+            if isinstance(node, ast.Name) and node.id in ['eval', 'exec', 'compile', 'open', '__import__', 'globals', 'locals', 'vars', 'dir', 'getattr', 'setattr', 'delattr']:
+                raise ValueError(f"Function '{node.id}' not allowed in CodeNode")
+
+            # Reject private/dunder attribute access
+            if isinstance(node, ast.Attribute) and node.attr.startswith('_'):
+                raise ValueError(f"Access to private attribute '{node.attr}' not allowed")
+
+        return tree
+
+    def execute(self) -> Dict[str, Any]:
+        """
+        Execute the Python code in a sandboxed environment.
+
+        Features:
+        - AST validation to reject dangerous operations
+        - Whitelisted safe builtins only
+        - 30 second timeout protection
+        - Returns value via 'result' variable
+
+        Returns:
+            Dictionary with result or error
+        """
+        import ast
+        import threading
+
+        code = self.state.get("code", "")
+
+        if not code.strip():
+            return {"data": {"result": None, "error": "No code provided"}}
+
+        self.log("INFO", "Starting code execution")
+
+        try:
+            # Step 1: Validate code safety
+            self.log("DEBUG", "Validating code safety...")
+            tree = self._validate_code_safety(code)
+
+            # Step 2: Compile the code
+            compiled = compile(tree, '<code>', 'exec')
+
+            # Step 3: Prepare execution context with safe builtins
+            exec_context = {
+                '__builtins__': CODE_NODE_SAFE_BUILTINS.copy(),
+            }
+
+            # Step 4: Execute with timeout (30 seconds)
+            result_container = {"completed": False, "error": None}
+
+            def run_code():
+                try:
+                    exec(compiled, exec_context)
+                    result_container["completed"] = True
+                except Exception as e:
+                    result_container["error"] = str(e)
+
+            thread = threading.Thread(target=run_code)
+            thread.daemon = True
+            thread.start()
+            thread.join(timeout=30)
+
+            if thread.is_alive():
+                self.log("ERROR", "Code execution timed out after 30 seconds")
+                return {"data": {"result": None, "error": "Execution timeout (30s)"}}
+
+            if result_container["error"]:
+                self.log("ERROR", f"Code error: {result_container['error']}")
+                return {"data": {"result": None, "error": result_container["error"]}}
+
+            # Step 5: Capture result
+            result = exec_context.get('result', None)
+
+            self.log("INFO", f"Code executed successfully, result: {result}")
+
+            return {"data": {"result": result}}
+
+        except SyntaxError as e:
+            self.log("ERROR", f"Syntax error: {e}")
+            return {"data": {"result": None, "error": f"Syntax error: {e}"}}
+        except ValueError as e:
+            self.log("ERROR", f"Validation error: {e}")
+            return {"data": {"result": None, "error": str(e)}}
+        except Exception as e:
+            self.log("ERROR", f"Execution failed: {e}")
+            return {"data": {"result": None, "error": str(e)}}
 
 
 # ============================================================================
@@ -1279,7 +1656,7 @@ class ExecutionNodes(Enum):
     Chat_Model = ChatModelNode
     Calculator = CalculatorNode
     Form = FormNode
-    # Agent_Model = AgentModelNode  # Future implementation
+    Code = CodeNode
 
 
 class TriggerNodes(Enum):

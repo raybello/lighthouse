@@ -28,7 +28,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pyinstaller dearpygui==1.8.0 rich==14.2.0
+          pip install pyinstaller dearpygui==1.8.0 rich==14.2.0 requests
 
       - name: Build executable
         shell: bash

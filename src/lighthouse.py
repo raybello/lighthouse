@@ -709,6 +709,7 @@ class LighthouseApp:
                 parent="node_editor",
                 exec_cb=self._exec_node,
                 delete_cb=self._del_node,
+                log_cb=self._log_to_node,
             )
 
             # Register node in the nodes dictionary
@@ -739,6 +740,7 @@ class LighthouseApp:
                 parent="node_editor",
                 exec_cb=self._exec_node,
                 delete_cb=self._del_node,
+                log_cb=self._log_to_node,
             )
 
             # Register node in the nodes dictionary
@@ -1000,6 +1002,17 @@ class LighthouseApp:
             for src, target in self.edges
             if not (src.startswith(f"{node_id}_") or target.startswith(f"{node_id}_"))
         ]
+
+    def _log_to_node(self, node_id: str, level: str, message: str) -> None:
+        """
+        Forward log messages from nodes to the executor's logging service.
+
+        Args:
+            node_id: ID of the node generating the log
+            level: Log level (INFO, DEBUG, WARN, ERROR)
+            message: Log message
+        """
+        self.executor.log_to_node(node_id, level, message)
 
         # console.print(f"ENGINE: Deleting Node {node_id} from Engine")
         # console.print(self.nodes)
