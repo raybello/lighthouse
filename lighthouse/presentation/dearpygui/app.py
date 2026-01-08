@@ -333,17 +333,8 @@ class LighthouseUI:
             "FAILED": "[Failed]",
             "CANCELLED": "[Cancelled]",
         }
-        status_colors = {
-            "PENDING": (150, 150, 150),
-            "INITIALIZING": (150, 150, 150),
-            "RUNNING": (194, 188, 81),
-            "COMPLETED": (83, 202, 74),
-            "FAILED": (202, 74, 74),
-            "CANCELLED": (150, 150, 150),
-        }
 
         icon = status_icons.get(status, "[?]")
-        color = status_colors.get(status, (150, 150, 150))
 
         # Format duration
         duration_str = "Running..."
@@ -373,7 +364,8 @@ class LighthouseUI:
                 color=(120, 180, 255),
             )
             dpg.add_text(
-                f"Nodes: {exec_data.get('nodes_executed', 0)}/{exec_data.get('node_count', 0)} executed",
+                f"Nodes: {exec_data.get('nodes_executed', 0)}/"
+                f"{exec_data.get('node_count', 0)} executed",
                 color=(120, 180, 255),
             )
             if exec_data.get("nodes_failed", 0) > 0:
@@ -439,15 +431,6 @@ class LighthouseUI:
         # Status icon
         status_icons = {"PENDING": "[.]", "RUNNING": "[>]", "COMPLETED": "[+]", "FAILED": "[X]"}
         icon = status_icons.get(status, "[?]")
-
-        # Status color
-        status_colors = {
-            "PENDING": (150, 150, 150),
-            "RUNNING": (194, 188, 81),
-            "COMPLETED": (83, 202, 74),
-            "FAILED": (202, 74, 74),
-        }
-        color = status_colors.get(status, (150, 150, 150))
 
         # Format duration
         duration_str = "-"
@@ -572,7 +555,8 @@ class LighthouseUI:
             if node_log.get("error_message"):
                 lines.append("")
                 lines.append(
-                    f"Node: {node_log.get('node_name', 'Unknown')} ({node_log.get('node_id', '')[:8]})"
+                    f"Node: {node_log.get('node_name', 'Unknown')} "
+                    f"({node_log.get('node_id', '')[:8]})"
                 )
                 lines.append(f"Error: {node_log['error_message']}")
                 lines.append("-" * 30)
@@ -1045,7 +1029,8 @@ class LighthouseUI:
                         if result.success:
                             self.node_last_outputs[nid] = {"data": result.data}
                             console.print(
-                                f"[cyan]Executed and added to context: {node.name} ({nid[:8]})[/cyan]"
+                                f"[cyan]Executed and added to context: {node.name} "
+                                f"({nid[:8]})[/cyan]"
                             )
                     except Exception as e:
                         console.print(

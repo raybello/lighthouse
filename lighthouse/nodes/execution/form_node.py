@@ -206,7 +206,8 @@ class FormNode(ExecutionNode):
                 errors.append(f"Field {i + 1}: Field name is required")
             elif not field_name.replace("_", "").isalnum():
                 errors.append(
-                    f"Field {i + 1}: Field name '{field_name}' must be alphanumeric (underscores allowed)"
+                    f"Field {i + 1}: Field name '{field_name}' must be alphanumeric "
+                    "(underscores allowed)"
                 )
             elif field_name in field_names:
                 errors.append(f"Field {i + 1}: Duplicate field name '{field_name}'")
@@ -217,7 +218,8 @@ class FormNode(ExecutionNode):
             valid_types = ["string", "number", "boolean", "object"]
             if field_type not in valid_types:
                 errors.append(
-                    f"Field '{field_name}': Invalid type '{field_type}'. Must be one of: {', '.join(valid_types)}"
+                    f"Field '{field_name}': Invalid type '{field_type}'. "
+                    f"Must be one of: {', '.join(valid_types)}"
                 )
 
             # Validate value based on type (only if not an expression)
@@ -238,7 +240,8 @@ class FormNode(ExecutionNode):
                         "["
                     ):
                         errors.append(
-                            f"Field '{field_name}': Value must be valid JSON object/array or expression"
+                            f"Field '{field_name}': Value must be valid JSON "
+                            "object/array or expression"
                         )
 
         return errors

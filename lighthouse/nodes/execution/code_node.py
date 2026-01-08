@@ -75,7 +75,9 @@ class CodeNode(ExecutionNode):
                     name="code",
                     label="Python Code",
                     field_type=FieldType.STRING,  # Long text
-                    default_value="# Write Python code here\n# Set 'result' variable for output\nresult = 42",
+                    default_value=(
+                        "# Write Python code here\n# Set 'result' variable for output\nresult = 42"
+                    ),
                     required=True,
                     description="Python code to execute (use 'result' variable for output)",
                 ),

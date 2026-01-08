@@ -225,7 +225,6 @@ class DearPyGuiNodeRenderer(INodeRenderer):
             return
 
         # Calculate window size based on field count
-        field_count = len(node.metadata.fields)
         base_height = 150  # Header + footer
         field_height = 60  # Per field
         long_field_height = 180  # For multiline fields
@@ -814,7 +813,8 @@ class DearPyGuiNodeRenderer(INodeRenderer):
                 errors.append(f"Property {i + 1}: Property name is required")
             elif not prop_name.replace("_", "").isalnum():
                 errors.append(
-                    f"Property {i + 1}: Property name '{prop_name}' must be alphanumeric (underscores allowed)"
+                    f"Property {i + 1}: Property name '{prop_name}' must be alphanumeric "
+                    "(underscores allowed)"
                 )
             elif prop_name in property_names:
                 errors.append(f"Property {i + 1}: Duplicate property name '{prop_name}'")
@@ -1017,7 +1017,8 @@ class DearPyGuiNodeRenderer(INodeRenderer):
                 errors.append(f"Field {i + 1}: Field name is required")
             elif not field_name.replace("_", "").isalnum():
                 errors.append(
-                    f"Field {i + 1}: Field name '{field_name}' must be alphanumeric (underscores allowed)"
+                    f"Field {i + 1}: Field name '{field_name}' must be alphanumeric "
+                    "(underscores allowed)"
                 )
             elif field_name in field_names:
                 errors.append(f"Field {i + 1}: Duplicate field name '{field_name}'")
@@ -1039,7 +1040,8 @@ class DearPyGuiNodeRenderer(INodeRenderer):
                 elif field_type == "object":
                     if not value.startswith("{") and not value.startswith("["):
                         errors.append(
-                            f"Field '{field_name}': Value must be valid JSON object/array or expression"
+                            f"Field '{field_name}': Value must be valid JSON "
+                            "object/array or expression"
                         )
 
         if errors:
