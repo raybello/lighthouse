@@ -1,7 +1,9 @@
 """Unit tests for ExecuteCommandNode."""
 
-import pytest
 from unittest.mock import Mock
+
+import pytest
+
 from lighthouse.nodes.execution.command_node import ExecuteCommandNode
 
 
@@ -59,12 +61,14 @@ class TestCommandExecution:
 
     def test_successful_command(self, command_node, mock_completed_process, mocker):
         """Test executing successful command."""
-        mock_run = mocker.patch('subprocess.run', return_value=mock_completed_process)
+        mock_run = mocker.patch("subprocess.run", return_value=mock_completed_process)
 
-        command_node.update_state({
-            "command": "echo 'test'",
-            "timeout": 10,
-        })
+        command_node.update_state(
+            {
+                "command": "echo 'test'",
+                "timeout": 10,
+            }
+        )
 
         result = command_node.execute({})
 
@@ -77,12 +81,14 @@ class TestCommandExecution:
 
     def test_failed_command(self, command_node, mock_failed_process, mocker):
         """Test executing failed command."""
-        mock_run = mocker.patch('subprocess.run', return_value=mock_failed_process)
+        mocker.patch("subprocess.run", return_value=mock_failed_process)
 
-        command_node.update_state({
-            "command": "invalid_command",
-            "timeout": 10,
-        })
+        command_node.update_state(
+            {
+                "command": "invalid_command",
+                "timeout": 10,
+            }
+        )
 
         result = command_node.execute({})
 
@@ -98,7 +104,7 @@ class TestCommandExecution:
         mock_result.stdout = "Output line 1\nOutput line 2"
         mock_result.stderr = ""
 
-        mocker.patch('subprocess.run', return_value=mock_result)
+        mocker.patch("subprocess.run", return_value=mock_result)
 
         command_node.update_state({"command": "ls -la"})
         result = command_node.execute({})
@@ -114,7 +120,7 @@ class TestCommandExecution:
         mock_result.stdout = ""
         mock_result.stderr = "Error: File not found"
 
-        mocker.patch('subprocess.run', return_value=mock_result)
+        mocker.patch("subprocess.run", return_value=mock_result)
 
         command_node.update_state({"command": "cat missing.txt"})
         result = command_node.execute({})
@@ -124,7 +130,7 @@ class TestCommandExecution:
 
     def test_command_includes_all_fields(self, command_node, mock_completed_process, mocker):
         """Test that result includes all expected fields."""
-        mocker.patch('subprocess.run', return_value=mock_completed_process)
+        mocker.patch("subprocess.run", return_value=mock_completed_process)
 
         command_node.update_state({"command": "echo test"})
         result = command_node.execute({})
@@ -142,12 +148,15 @@ class TestCommandTimeout:
     def test_timeout_error(self, command_node, mocker):
         """Test handling command timeout."""
         import subprocess
-        mocker.patch('subprocess.run', side_effect=subprocess.TimeoutExpired("cmd", 1))
 
-        command_node.update_state({
-            "command": "sleep 100",
-            "timeout": 1,
-        })
+        mocker.patch("subprocess.run", side_effect=subprocess.TimeoutExpired("cmd", 1))
+
+        command_node.update_state(
+            {
+                "command": "sleep 100",
+                "timeout": 1,
+            }
+        )
 
         result = command_node.execute({})
 
@@ -156,7 +165,7 @@ class TestCommandTimeout:
 
     def test_custom_timeout(self, command_node, mock_completed_process, mocker):
         """Test custom timeout value."""
-        mock_run = mocker.patch('subprocess.run', return_value=mock_completed_process)
+        mock_run = mocker.patch("subprocess.run", return_value=mock_completed_process)
 
         command_node.set_state_value("timeout", 120)
         command_node.set_state_value("command", "echo test")
@@ -189,8 +198,8 @@ class TestCommandErrorHandling:
 
     def test_file_not_found_error(self, command_node, mocker):
         """Test handling FileNotFoundError."""
-        import subprocess
-        mocker.patch('subprocess.run', side_effect=FileNotFoundError("command not found"))
+
+        mocker.patch("subprocess.run", side_effect=FileNotFoundError("command not found"))
 
         command_node.update_state({"command": "nonexistent_command"})
 
@@ -201,7 +210,7 @@ class TestCommandErrorHandling:
 
     def test_general_exception_handling(self, command_node, mocker):
         """Test handling unexpected exceptions."""
-        mocker.patch('subprocess.run', side_effect=RuntimeError("Unexpected error"))
+        mocker.patch("subprocess.run", side_effect=RuntimeError("Unexpected error"))
 
         command_node.update_state({"command": "echo test"})
 
@@ -221,12 +230,14 @@ class TestLogging:
         mock_result.stdout = "Test output"
         mock_result.stderr = "Test error"
 
-        mocker.patch('subprocess.run', return_value=mock_result)
+        mocker.patch("subprocess.run", return_value=mock_result)
 
-        command_node.update_state({
-            "command": "echo test",
-            "log_output": True,
-        })
+        command_node.update_state(
+            {
+                "command": "echo test",
+                "log_output": True,
+            }
+        )
 
         result = command_node.execute({})
 
@@ -242,12 +253,14 @@ class TestLogging:
         mock_result.stdout = "Test output"
         mock_result.stderr = ""
 
-        mocker.patch('subprocess.run', return_value=mock_result)
+        mocker.patch("subprocess.run", return_value=mock_result)
 
-        command_node.update_state({
-            "command": "echo test",
-            "log_output": False,
-        })
+        command_node.update_state(
+            {
+                "command": "echo test",
+                "log_output": False,
+            }
+        )
 
         result = command_node.execute({})
 
@@ -262,12 +275,14 @@ class TestLogging:
         mock_result.stdout = long_output
         mock_result.stderr = ""
 
-        mocker.patch('subprocess.run', return_value=mock_result)
+        mocker.patch("subprocess.run", return_value=mock_result)
 
-        command_node.update_state({
-            "command": "echo test",
-            "log_output": True,
-        })
+        command_node.update_state(
+            {
+                "command": "echo test",
+                "log_output": True,
+            }
+        )
 
         result = command_node.execute({})
 
@@ -326,10 +341,12 @@ class TestStateManagement:
 
     def test_state_persistence(self, command_node):
         """Test that state persists across updates."""
-        command_node.update_state({
-            "command": "ls -la",
-            "timeout": 30,
-        })
+        command_node.update_state(
+            {
+                "command": "ls -la",
+                "timeout": 30,
+            }
+        )
 
         state = command_node.state
 
@@ -339,7 +356,7 @@ class TestStateManagement:
 
     def test_timeout_conversion(self, command_node, mock_completed_process, mocker):
         """Test that timeout is converted to float."""
-        mock_run = mocker.patch('subprocess.run', return_value=mock_completed_process)
+        mock_run = mocker.patch("subprocess.run", return_value=mock_completed_process)
 
         command_node.set_state_value("timeout", "45")
         command_node.set_state_value("command", "echo test")
@@ -350,7 +367,7 @@ class TestStateManagement:
 
     def test_invalid_timeout_defaults_to_60(self, command_node, mock_completed_process, mocker):
         """Test that invalid timeout defaults to 60 seconds."""
-        mock_run = mocker.patch('subprocess.run', return_value=mock_completed_process)
+        mock_run = mocker.patch("subprocess.run", return_value=mock_completed_process)
 
         command_node.set_state_value("timeout", "invalid")
         command_node.set_state_value("command", "echo test")
@@ -365,7 +382,7 @@ class TestExecutionResult:
 
     def test_result_has_duration(self, command_node, mock_completed_process, mocker):
         """Test that result includes execution duration."""
-        mocker.patch('subprocess.run', return_value=mock_completed_process)
+        mocker.patch("subprocess.run", return_value=mock_completed_process)
 
         command_node.update_state({"command": "echo test"})
         result = command_node.execute({})
@@ -374,7 +391,7 @@ class TestExecutionResult:
 
     def test_successful_result_structure(self, command_node, mock_completed_process, mocker):
         """Test structure of successful result."""
-        mocker.patch('subprocess.run', return_value=mock_completed_process)
+        mocker.patch("subprocess.run", return_value=mock_completed_process)
 
         command_node.update_state({"command": "echo test"})
         result = command_node.execute({})
@@ -386,7 +403,7 @@ class TestExecutionResult:
 
     def test_failed_result_structure(self, command_node, mock_failed_process, mocker):
         """Test structure of failed result."""
-        mocker.patch('subprocess.run', return_value=mock_failed_process)
+        mocker.patch("subprocess.run", return_value=mock_failed_process)
 
         command_node.update_state({"command": "false"})
         result = command_node.execute({})

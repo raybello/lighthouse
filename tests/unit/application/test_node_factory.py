@@ -1,10 +1,11 @@
 """Unit tests for NodeFactory."""
 
 import pytest
+
 from lighthouse.application.services.node_factory import NodeFactory
-from lighthouse.nodes.registry import NodeRegistry, reset_registry
 from lighthouse.nodes.base.base_node import BaseNode, ExecutionNode, TriggerNode
 from lighthouse.nodes.execution.calculator_node import CalculatorNode
+from lighthouse.nodes.registry import NodeRegistry, reset_registry
 from lighthouse.nodes.trigger.manual_trigger_node import ManualTriggerNode
 
 

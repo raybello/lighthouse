@@ -1,7 +1,8 @@
 """Unit tests for CodeNode."""
 
 import pytest
-from lighthouse.nodes.execution.code_node import CodeNode, SAFE_BUILTINS
+
+from lighthouse.nodes.execution.code_node import SAFE_BUILTINS, CodeNode
 
 
 @pytest.fixture
@@ -33,16 +34,16 @@ class TestCodeNodeInitialization:
 
     def test_safe_builtins(self):
         """Test that SAFE_BUILTINS contains expected functions."""
-        assert 'len' in SAFE_BUILTINS
-        assert 'sum' in SAFE_BUILTINS
-        assert 'range' in SAFE_BUILTINS
-        assert 'list' in SAFE_BUILTINS
-        assert 'dict' in SAFE_BUILTINS
+        assert "len" in SAFE_BUILTINS
+        assert "sum" in SAFE_BUILTINS
+        assert "range" in SAFE_BUILTINS
+        assert "list" in SAFE_BUILTINS
+        assert "dict" in SAFE_BUILTINS
         # Dangerous functions should NOT be present
-        assert 'eval' not in SAFE_BUILTINS
-        assert 'exec' not in SAFE_BUILTINS
-        assert 'open' not in SAFE_BUILTINS
-        assert '__import__' not in SAFE_BUILTINS
+        assert "eval" not in SAFE_BUILTINS
+        assert "exec" not in SAFE_BUILTINS
+        assert "open" not in SAFE_BUILTINS
+        assert "__import__" not in SAFE_BUILTINS
 
 
 class TestCodeExecution:
@@ -50,10 +51,12 @@ class TestCodeExecution:
 
     def test_simple_arithmetic(self, code_node):
         """Test executing simple arithmetic."""
-        code_node.update_state({
-            "code": "result = 2 + 2",
-            "timeout": 5,
-        })
+        code_node.update_state(
+            {
+                "code": "result = 2 + 2",
+                "timeout": 5,
+            }
+        )
 
         result = code_node.execute({})
 
@@ -62,9 +65,11 @@ class TestCodeExecution:
 
     def test_string_manipulation(self, code_node):
         """Test executing string operations."""
-        code_node.update_state({
-            "code": "result = 'hello ' + 'world'",
-        })
+        code_node.update_state(
+            {
+                "code": "result = 'hello ' + 'world'",
+            }
+        )
 
         result = code_node.execute({})
 
@@ -73,9 +78,11 @@ class TestCodeExecution:
 
     def test_list_operations(self, code_node):
         """Test executing list operations."""
-        code_node.update_state({
-            "code": "numbers = [1, 2, 3, 4, 5]\nresult = sum(numbers)",
-        })
+        code_node.update_state(
+            {
+                "code": "numbers = [1, 2, 3, 4, 5]\nresult = sum(numbers)",
+            }
+        )
 
         result = code_node.execute({})
 
@@ -84,9 +91,11 @@ class TestCodeExecution:
 
     def test_dict_operations(self, code_node):
         """Test executing dictionary operations."""
-        code_node.update_state({
-            "code": "data = {'name': 'Alice', 'age': 30}\nresult = data['name']",
-        })
+        code_node.update_state(
+            {
+                "code": "data = {'name': 'Alice', 'age': 30}\nresult = data['name']",
+            }
+        )
 
         result = code_node.execute({})
 
@@ -95,9 +104,11 @@ class TestCodeExecution:
 
     def test_loop_execution(self, code_node):
         """Test executing loops."""
-        code_node.update_state({
-            "code": "total = 0\nfor i in range(5):\n    total += i\nresult = total",
-        })
+        code_node.update_state(
+            {
+                "code": "total = 0\nfor i in range(5):\n    total += i\nresult = total",
+            }
+        )
 
         result = code_node.execute({})
 
@@ -106,9 +117,11 @@ class TestCodeExecution:
 
     def test_function_definition(self, code_node):
         """Test defining and calling functions."""
-        code_node.update_state({
-            "code": "def add(a, b):\n    return a + b\nresult = add(10, 20)",
-        })
+        code_node.update_state(
+            {
+                "code": "def add(a, b):\n    return a + b\nresult = add(10, 20)",
+            }
+        )
 
         result = code_node.execute({})
 
@@ -117,9 +130,11 @@ class TestCodeExecution:
 
     def test_no_result_variable(self, code_node):
         """Test code that doesn't set result variable."""
-        code_node.update_state({
-            "code": "x = 5\ny = 10",
-        })
+        code_node.update_state(
+            {
+                "code": "x = 5\ny = 10",
+            }
+        )
 
         result = code_node.execute({})
 
@@ -128,9 +143,11 @@ class TestCodeExecution:
 
     def test_context_access(self, code_node):
         """Test accessing context in code."""
-        code_node.update_state({
-            "code": "result = context.get('value', 0) * 2",
-        })
+        code_node.update_state(
+            {
+                "code": "result = context.get('value', 0) * 2",
+            }
+        )
 
         result = code_node.execute({"value": 21})
 
@@ -143,9 +160,11 @@ class TestCodeSafety:
 
     def test_reject_imports(self, code_node):
         """Test that imports are rejected."""
-        code_node.update_state({
-            "code": "import os\nresult = os.getcwd()",
-        })
+        code_node.update_state(
+            {
+                "code": "import os\nresult = os.getcwd()",
+            }
+        )
 
         result = code_node.execute({})
 
@@ -154,9 +173,11 @@ class TestCodeSafety:
 
     def test_reject_from_imports(self, code_node):
         """Test that from imports are rejected."""
-        code_node.update_state({
-            "code": "from datetime import datetime\nresult = datetime.now()",
-        })
+        code_node.update_state(
+            {
+                "code": "from datetime import datetime\nresult = datetime.now()",
+            }
+        )
 
         result = code_node.execute({})
 
@@ -165,9 +186,11 @@ class TestCodeSafety:
 
     def test_reject_eval(self, code_node):
         """Test that eval is rejected."""
-        code_node.update_state({
-            "code": "result = eval('2 + 2')",
-        })
+        code_node.update_state(
+            {
+                "code": "result = eval('2 + 2')",
+            }
+        )
 
         result = code_node.execute({})
 
@@ -177,9 +200,11 @@ class TestCodeSafety:
 
     def test_reject_exec(self, code_node):
         """Test that exec is rejected."""
-        code_node.update_state({
-            "code": "exec('result = 42')",
-        })
+        code_node.update_state(
+            {
+                "code": "exec('result = 42')",
+            }
+        )
 
         result = code_node.execute({})
 
@@ -189,9 +214,11 @@ class TestCodeSafety:
 
     def test_reject_compile(self, code_node):
         """Test that compile is rejected."""
-        code_node.update_state({
-            "code": "compile('2+2', '<string>', 'eval')",
-        })
+        code_node.update_state(
+            {
+                "code": "compile('2+2', '<string>', 'eval')",
+            }
+        )
 
         result = code_node.execute({})
 
@@ -201,9 +228,11 @@ class TestCodeSafety:
 
     def test_reject_open(self, code_node):
         """Test that open is rejected."""
-        code_node.update_state({
-            "code": "result = open('/etc/passwd', 'r')",
-        })
+        code_node.update_state(
+            {
+                "code": "result = open('/etc/passwd', 'r')",
+            }
+        )
 
         result = code_node.execute({})
 
@@ -213,9 +242,11 @@ class TestCodeSafety:
 
     def test_reject_import_function(self, code_node):
         """Test that __import__ is rejected."""
-        code_node.update_state({
-            "code": "os = __import__('os')\nresult = os.getcwd()",
-        })
+        code_node.update_state(
+            {
+                "code": "os = __import__('os')\nresult = os.getcwd()",
+            }
+        )
 
         result = code_node.execute({})
 
@@ -225,9 +256,11 @@ class TestCodeSafety:
 
     def test_reject_globals(self, code_node):
         """Test that globals is rejected."""
-        code_node.update_state({
-            "code": "result = globals()",
-        })
+        code_node.update_state(
+            {
+                "code": "result = globals()",
+            }
+        )
 
         result = code_node.execute({})
 
@@ -237,9 +270,11 @@ class TestCodeSafety:
 
     def test_reject_locals(self, code_node):
         """Test that locals is rejected."""
-        code_node.update_state({
-            "code": "result = locals()",
-        })
+        code_node.update_state(
+            {
+                "code": "result = locals()",
+            }
+        )
 
         result = code_node.execute({})
 
@@ -249,9 +284,11 @@ class TestCodeSafety:
 
     def test_reject_getattr(self, code_node):
         """Test that getattr is rejected."""
-        code_node.update_state({
-            "code": "result = getattr(object, '__class__')",
-        })
+        code_node.update_state(
+            {
+                "code": "result = getattr(object, '__class__')",
+            }
+        )
 
         result = code_node.execute({})
 
@@ -261,9 +298,11 @@ class TestCodeSafety:
 
     def test_reject_private_attributes(self, code_node):
         """Test that private attribute access is rejected."""
-        code_node.update_state({
-            "code": "x = []\nresult = x.__class__",
-        })
+        code_node.update_state(
+            {
+                "code": "x = []\nresult = x.__class__",
+            }
+        )
 
         result = code_node.execute({})
 
@@ -273,9 +312,11 @@ class TestCodeSafety:
 
     def test_reject_dunder_methods(self, code_node):
         """Test that dunder method access is rejected."""
-        code_node.update_state({
-            "code": "class Foo:\n    pass\nresult = Foo.__init__",
-        })
+        code_node.update_state(
+            {
+                "code": "class Foo:\n    pass\nresult = Foo.__init__",
+            }
+        )
 
         result = code_node.execute({})
 
@@ -288,10 +329,12 @@ class TestTimeout:
 
     def test_timeout_enforcement(self, code_node):
         """Test that infinite loops timeout."""
-        code_node.update_state({
-            "code": "while True:\n    pass",
-            "timeout": 1,
-        })
+        code_node.update_state(
+            {
+                "code": "while True:\n    pass",
+                "timeout": 1,
+            }
+        )
 
         result = code_node.execute({})
 
@@ -300,10 +343,12 @@ class TestTimeout:
 
     def test_custom_timeout(self, code_node):
         """Test custom timeout value."""
-        code_node.update_state({
-            "code": "import time\ntime.sleep(2)\nresult = 42",
-            "timeout": 1,
-        })
+        code_node.update_state(
+            {
+                "code": "import time\ntime.sleep(2)\nresult = 42",
+                "timeout": 1,
+            }
+        )
 
         result = code_node.execute({})
 
@@ -313,10 +358,12 @@ class TestTimeout:
 
     def test_fast_execution_no_timeout(self, code_node):
         """Test that fast code doesn't timeout."""
-        code_node.update_state({
-            "code": "result = sum(range(1000))",
-            "timeout": 30,
-        })
+        code_node.update_state(
+            {
+                "code": "result = sum(range(1000))",
+                "timeout": 30,
+            }
+        )
 
         result = code_node.execute({})
 
@@ -329,9 +376,11 @@ class TestErrorHandling:
 
     def test_syntax_error(self, code_node):
         """Test handling syntax errors."""
-        code_node.update_state({
-            "code": "result = 2 +",
-        })
+        code_node.update_state(
+            {
+                "code": "result = 2 +",
+            }
+        )
 
         result = code_node.execute({})
 
@@ -340,9 +389,11 @@ class TestErrorHandling:
 
     def test_runtime_error(self, code_node):
         """Test handling runtime errors."""
-        code_node.update_state({
-            "code": "result = 10 / 0",
-        })
+        code_node.update_state(
+            {
+                "code": "result = 10 / 0",
+            }
+        )
 
         result = code_node.execute({})
 
@@ -351,9 +402,11 @@ class TestErrorHandling:
 
     def test_name_error(self, code_node):
         """Test handling name errors."""
-        code_node.update_state({
-            "code": "result = undefined_variable",
-        })
+        code_node.update_state(
+            {
+                "code": "result = undefined_variable",
+            }
+        )
 
         result = code_node.execute({})
 
@@ -362,9 +415,11 @@ class TestErrorHandling:
 
     def test_type_error(self, code_node):
         """Test handling type errors."""
-        code_node.update_state({
-            "code": "result = 'string' + 42",
-        })
+        code_node.update_state(
+            {
+                "code": "result = 'string' + 42",
+            }
+        )
 
         result = code_node.execute({})
 
@@ -458,10 +513,12 @@ class TestStateManagement:
 
     def test_state_persistence(self, code_node):
         """Test that state persists across updates."""
-        code_node.update_state({
-            "code": "result = 100",
-            "timeout": 15,
-        })
+        code_node.update_state(
+            {
+                "code": "result = 100",
+                "timeout": 15,
+            }
+        )
 
         state = code_node.state
 
@@ -523,9 +580,11 @@ class TestBuiltinFunctions:
 
     def test_math_functions(self, code_node):
         """Test math builtin functions."""
-        code_node.update_state({
-            "code": "result = abs(-42) + min(5, 10) + max(5, 10) + round(3.7)",
-        })
+        code_node.update_state(
+            {
+                "code": "result = abs(-42) + min(5, 10) + max(5, 10) + round(3.7)",
+            }
+        )
 
         result = code_node.execute({})
 
@@ -534,9 +593,11 @@ class TestBuiltinFunctions:
 
     def test_sequence_functions(self, code_node):
         """Test sequence builtin functions."""
-        code_node.update_state({
-            "code": "result = len([1,2,3]) + sum([10, 20, 30])",
-        })
+        code_node.update_state(
+            {
+                "code": "result = len([1,2,3]) + sum([10, 20, 30])",
+            }
+        )
 
         result = code_node.execute({})
 
@@ -545,9 +606,11 @@ class TestBuiltinFunctions:
 
     def test_type_constructors(self, code_node):
         """Test type constructor functions."""
-        code_node.update_state({
-            "code": "result = int('42') + float('3.14') + len(str(100))",
-        })
+        code_node.update_state(
+            {
+                "code": "result = int('42') + float('3.14') + len(str(100))",
+            }
+        )
 
         result = code_node.execute({})
 
@@ -556,25 +619,33 @@ class TestBuiltinFunctions:
 
     def test_iteration_functions(self, code_node):
         """Test iteration builtin functions."""
-        code_node.update_state({
-            "code": "result = list(range(5)) + sorted([3,1,2]) + list(reversed([1,2,3]))",
-        })
+        code_node.update_state(
+            {
+                "code": "result = list(range(5)) + sorted([3,1,2]) + list(reversed([1,2,3]))",
+            }
+        )
 
         result = code_node.execute({})
 
         assert result.success is True
-        assert result.data["result"] == [0,1,2,3,4] + [1,2,3] + [3,2,1]
+        assert result.data["result"] == [0, 1, 2, 3, 4] + [1, 2, 3] + [3, 2, 1]
 
     def test_filter_map(self, code_node):
         """Test filter and map functions."""
-        code_node.update_state({
-            "code": "evens = list(filter(lambda x: x % 2 == 0, range(10)))\ndoubled = list(map(lambda x: x * 2, [1,2,3]))\nresult = evens + doubled",
-        })
+        code_node.update_state(
+            {
+                "code": (
+                    "evens = list(filter(lambda x: x % 2 == 0, range(10)))\n"
+                    "doubled = list(map(lambda x: x * 2, [1,2,3]))\n"
+                    "result = evens + doubled"
+                ),
+            }
+        )
 
         result = code_node.execute({})
 
         assert result.success is True
-        assert result.data["result"] == [0,2,4,6,8] + [2,4,6]
+        assert result.data["result"] == [0, 2, 4, 6, 8] + [2, 4, 6]
 
 
 class TestComplexScenarios:
@@ -582,8 +653,9 @@ class TestComplexScenarios:
 
     def test_nested_data_structures(self, code_node):
         """Test working with nested data structures."""
-        code_node.update_state({
-            "code": """
+        code_node.update_state(
+            {
+                "code": """
 users = [
     {'name': 'Alice', 'age': 30},
     {'name': 'Bob', 'age': 25},
@@ -591,17 +663,19 @@ users = [
 ]
 result = [u['name'] for u in users if u['age'] >= 30]
 """,
-        })
+            }
+        )
 
         result = code_node.execute({})
 
         assert result.success is True
-        assert result.data["result"] == ['Alice', 'Charlie']
+        assert result.data["result"] == ["Alice", "Charlie"]
 
     def test_class_definition(self, code_node):
         """Test defining and using classes."""
-        code_node.update_state({
-            "code": """
+        code_node.update_state(
+            {
+                "code": """
 class Calculator:
     def add(self, a, b):
         return a + b
@@ -609,7 +683,8 @@ class Calculator:
 calc = Calculator()
 result = calc.add(10, 32)
 """,
-        })
+            }
+        )
 
         result = code_node.execute({})
 
@@ -618,8 +693,9 @@ result = calc.add(10, 32)
 
     def test_multiple_operations(self, code_node):
         """Test multiple sequential operations."""
-        code_node.update_state({
-            "code": """
+        code_node.update_state(
+            {
+                "code": """
 # Calculate factorial
 n = 5
 factorial = 1
@@ -633,7 +709,8 @@ for i in range(8):
 
 result = {'factorial': factorial, 'fibonacci': fib[-1]}
 """,
-        })
+            }
+        )
 
         result = code_node.execute({})
 

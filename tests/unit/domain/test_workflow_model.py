@@ -1,12 +1,9 @@
 """Unit tests for Workflow domain model."""
 
 import pytest
-from lighthouse.domain.models.workflow import Workflow, Connection
-from lighthouse.domain.models.node import Node
-from lighthouse.domain.exceptions import (
-    NodeNotFoundError,
-    InvalidConnectionError
-)
+
+from lighthouse.domain.exceptions import InvalidConnectionError, NodeNotFoundError
+from lighthouse.domain.models.workflow import Connection
 
 
 def test_workflow_creation(empty_workflow):

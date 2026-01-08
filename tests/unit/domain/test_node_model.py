@@ -1,7 +1,8 @@
 """Unit tests for Node domain model."""
 
 import pytest
-from lighthouse.domain.models.node import Node, ExecutionResult
+
+from lighthouse.domain.models.node import ExecutionResult, Node
 
 
 def test_node_creation(sample_node, sample_node_metadata):
@@ -16,12 +17,7 @@ def test_node_creation(sample_node, sample_node_metadata):
 def test_node_requires_metadata():
     """Test that node creation fails without metadata."""
     with pytest.raises(ValueError, match="must have metadata"):
-        Node(
-            id="test-123",
-            name="Test",
-            node_type="Test",
-            metadata=None
-        )
+        Node(id="test-123", name="Test", node_type="Test", metadata=None)
 
 
 def test_node_update_state(sample_node):
@@ -78,10 +74,7 @@ def test_node_to_dict(sample_node):
 
 def test_execution_result_success():
     """Test creating successful execution result."""
-    result = ExecutionResult.success_result(
-        data={"output": "value"},
-        duration=1.5
-    )
+    result = ExecutionResult.success_result(data={"output": "value"}, duration=1.5)
 
     assert result.success is True
     assert result.data == {"output": "value"}
@@ -91,10 +84,7 @@ def test_execution_result_success():
 
 def test_execution_result_error():
     """Test creating error execution result."""
-    result = ExecutionResult.error_result(
-        error="Something went wrong",
-        duration=0.5
-    )
+    result = ExecutionResult.error_result(error="Something went wrong", duration=0.5)
 
     assert result.success is False
     assert result.data == {}

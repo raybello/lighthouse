@@ -1,8 +1,10 @@
 """Unit tests for HTTPRequestNode."""
 
+from unittest.mock import Mock
+
 import pytest
-from unittest.mock import Mock, MagicMock
-from lighthouse.nodes.execution.http_node import HTTPRequestNode, HTTPRequestType
+
+from lighthouse.nodes.execution.http_node import HTTPRequestNode
 
 
 @pytest.fixture
@@ -52,13 +54,11 @@ class TestHTTPRequests:
 
     def test_get_request(self, http_node, mock_response, mocker):
         """Test GET request."""
-        mock_request = mocker.patch('requests.request', return_value=mock_response)
+        mock_request = mocker.patch("requests.request", return_value=mock_response)
 
-        http_node.update_state({
-            "url": "https://api.example.com/users",
-            "method": "GET",
-            "timeout": 10
-        })
+        http_node.update_state(
+            {"url": "https://api.example.com/users", "method": "GET", "timeout": 10}
+        )
 
         result = http_node.execute({})
 
@@ -69,14 +69,16 @@ class TestHTTPRequests:
 
     def test_post_request_with_body(self, http_node, mock_response, mocker):
         """Test POST request with JSON body."""
-        mock_request = mocker.patch('requests.request', return_value=mock_response)
+        mock_request = mocker.patch("requests.request", return_value=mock_response)
 
-        http_node.update_state({
-            "url": "https://api.example.com/users",
-            "method": "POST",
-            "body": '{"name": "John", "age": 30}',
-            "timeout": 10
-        })
+        http_node.update_state(
+            {
+                "url": "https://api.example.com/users",
+                "method": "POST",
+                "body": '{"name": "John", "age": 30}',
+                "timeout": 10,
+            }
+        )
 
         result = http_node.execute({})
 
@@ -87,13 +89,15 @@ class TestHTTPRequests:
 
     def test_put_request(self, http_node, mock_response, mocker):
         """Test PUT request."""
-        mock_request = mocker.patch('requests.request', return_value=mock_response)
+        mock_request = mocker.patch("requests.request", return_value=mock_response)
 
-        http_node.update_state({
-            "url": "https://api.example.com/users/1",
-            "method": "PUT",
-            "body": '{"name": "Updated"}',
-        })
+        http_node.update_state(
+            {
+                "url": "https://api.example.com/users/1",
+                "method": "PUT",
+                "body": '{"name": "Updated"}',
+            }
+        )
 
         result = http_node.execute({})
 
@@ -102,12 +106,14 @@ class TestHTTPRequests:
 
     def test_delete_request(self, http_node, mock_response, mocker):
         """Test DELETE request."""
-        mock_request = mocker.patch('requests.request', return_value=mock_response)
+        mock_request = mocker.patch("requests.request", return_value=mock_response)
 
-        http_node.update_state({
-            "url": "https://api.example.com/users/1",
-            "method": "DELETE",
-        })
+        http_node.update_state(
+            {
+                "url": "https://api.example.com/users/1",
+                "method": "DELETE",
+            }
+        )
 
         result = http_node.execute({})
 
@@ -127,7 +133,7 @@ class TestResponseHandling:
         response.url = "https://api.example.com"
         response.json.return_value = {"data": [1, 2, 3]}
 
-        mocker.patch('requests.request', return_value=response)
+        mocker.patch("requests.request", return_value=response)
 
         http_node.update_state({"url": "https://api.example.com"})
         result = http_node.execute({})
@@ -144,7 +150,7 @@ class TestResponseHandling:
         response.json.side_effect = ValueError("Not JSON")
         response.text = "Plain text response"
 
-        mocker.patch('requests.request', return_value=response)
+        mocker.patch("requests.request", return_value=response)
 
         http_node.update_state({"url": "https://api.example.com"})
         result = http_node.execute({})
@@ -153,7 +159,7 @@ class TestResponseHandling:
 
     def test_response_includes_all_fields(self, http_node, mock_response, mocker):
         """Test that response includes all expected fields."""
-        mocker.patch('requests.request', return_value=mock_response)
+        mocker.patch("requests.request", return_value=mock_response)
 
         http_node.update_state({"url": "https://api.example.com"})
         result = http_node.execute({})
@@ -171,12 +177,10 @@ class TestErrorHandling:
     def test_timeout_error(self, http_node, mocker):
         """Test handling request timeout."""
         import requests
-        mocker.patch('requests.request', side_effect=requests.Timeout("Request timed out"))
 
-        http_node.update_state({
-            "url": "https://slow-api.example.com",
-            "timeout": 1
-        })
+        mocker.patch("requests.request", side_effect=requests.Timeout("Request timed out"))
+
+        http_node.update_state({"url": "https://slow-api.example.com", "timeout": 1})
 
         result = http_node.execute({})
 
@@ -186,7 +190,8 @@ class TestErrorHandling:
     def test_connection_error(self, http_node, mocker):
         """Test handling connection error."""
         import requests
-        mocker.patch('requests.request', side_effect=requests.ConnectionError("Failed to connect"))
+
+        mocker.patch("requests.request", side_effect=requests.ConnectionError("Failed to connect"))
 
         http_node.update_state({"url": "https://invalid.example.com"})
 
@@ -206,13 +211,15 @@ class TestErrorHandling:
 
     def test_invalid_json_body(self, http_node, mock_response, mocker):
         """Test with invalid JSON body."""
-        mock_request = mocker.patch('requests.request', return_value=mock_response)
+        mock_request = mocker.patch("requests.request", return_value=mock_response)
 
-        http_node.update_state({
-            "url": "https://api.example.com",
-            "method": "POST",
-            "body": "{invalid json",
-        })
+        http_node.update_state(
+            {
+                "url": "https://api.example.com",
+                "method": "POST",
+                "body": "{invalid json",
+            }
+        )
 
         result = http_node.execute({})
 
@@ -226,13 +233,15 @@ class TestBodyParsing:
 
     def test_empty_body_for_get(self, http_node, mock_response, mocker):
         """Test that GET requests don't send body."""
-        mock_request = mocker.patch('requests.request', return_value=mock_response)
+        mock_request = mocker.patch("requests.request", return_value=mock_response)
 
-        http_node.update_state({
-            "url": "https://api.example.com",
-            "method": "GET",
-            "body": '{"ignored": "value"}',
-        })
+        http_node.update_state(
+            {
+                "url": "https://api.example.com",
+                "method": "GET",
+                "body": '{"ignored": "value"}',
+            }
+        )
 
         result = http_node.execute({})
 
@@ -241,29 +250,33 @@ class TestBodyParsing:
 
     def test_body_for_post(self, http_node, mock_response, mocker):
         """Test that POST requests send JSON body."""
-        mock_request = mocker.patch('requests.request', return_value=mock_response)
+        mock_request = mocker.patch("requests.request", return_value=mock_response)
 
-        http_node.update_state({
-            "url": "https://api.example.com",
-            "method": "POST",
-            "body": '{"key": "value"}',
-        })
+        http_node.update_state(
+            {
+                "url": "https://api.example.com",
+                "method": "POST",
+                "body": '{"key": "value"}',
+            }
+        )
 
-        result = http_node.execute({})
+        http_node.execute({})
 
         assert mock_request.call_args[1]["json"] == {"key": "value"}
 
     def test_empty_body_string(self, http_node, mock_response, mocker):
         """Test with empty body string."""
-        mock_request = mocker.patch('requests.request', return_value=mock_response)
+        mock_request = mocker.patch("requests.request", return_value=mock_response)
 
-        http_node.update_state({
-            "url": "https://api.example.com",
-            "method": "POST",
-            "body": "",
-        })
+        http_node.update_state(
+            {
+                "url": "https://api.example.com",
+                "method": "POST",
+                "body": "",
+            }
+        )
 
-        result = http_node.execute({})
+        http_node.execute({})
 
         assert mock_request.call_args[1]["json"] is None
 
@@ -328,12 +341,14 @@ class TestHTTPMethods:
     @pytest.mark.parametrize("method", ["GET", "POST", "PUT", "PATCH", "DELETE"])
     def test_all_http_methods(self, http_node, mock_response, mocker, method):
         """Test all HTTP methods are supported."""
-        mock_request = mocker.patch('requests.request', return_value=mock_response)
+        mock_request = mocker.patch("requests.request", return_value=mock_response)
 
-        http_node.update_state({
-            "url": "https://api.example.com",
-            "method": method,
-        })
+        http_node.update_state(
+            {
+                "url": "https://api.example.com",
+                "method": method,
+            }
+        )
 
         result = http_node.execute({})
 
@@ -346,21 +361,18 @@ class TestStateManagement:
 
     def test_custom_timeout(self, http_node, mock_response, mocker):
         """Test custom timeout value."""
-        mock_request = mocker.patch('requests.request', return_value=mock_response)
+        mock_request = mocker.patch("requests.request", return_value=mock_response)
 
         http_node.set_state_value("timeout", 60)
         http_node.set_state_value("url", "https://api.example.com")
 
-        result = http_node.execute({})
+        http_node.execute({})
 
         assert mock_request.call_args[1]["timeout"] == 60.0
 
     def test_state_persistence(self, http_node):
         """Test that state persists across updates."""
-        http_node.update_state({
-            "url": "https://custom.api.com",
-            "method": "POST"
-        })
+        http_node.update_state({"url": "https://custom.api.com", "method": "POST"})
 
         state = http_node.state
 
@@ -372,13 +384,16 @@ class TestStateManagement:
 class TestResponseStatusCodes:
     """Tests for different response status codes."""
 
-    @pytest.mark.parametrize("status_code,is_ok", [
-        (200, True),
-        (201, True),
-        (400, False),
-        (404, False),
-        (500, False),
-    ])
+    @pytest.mark.parametrize(
+        "status_code,is_ok",
+        [
+            (200, True),
+            (201, True),
+            (400, False),
+            (404, False),
+            (500, False),
+        ],
+    )
     def test_various_status_codes(self, http_node, mocker, status_code, is_ok):
         """Test handling various HTTP status codes."""
         response = Mock()
@@ -388,7 +403,7 @@ class TestResponseStatusCodes:
         response.url = "https://api.example.com"
         response.json.return_value = {}
 
-        mocker.patch('requests.request', return_value=response)
+        mocker.patch("requests.request", return_value=response)
 
         http_node.update_state({"url": "https://api.example.com"})
         result = http_node.execute({})

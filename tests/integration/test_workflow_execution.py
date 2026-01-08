@@ -1,6 +1,7 @@
 """Integration tests for workflow execution."""
 
 import pytest
+
 from lighthouse.container import create_headless_container
 from lighthouse.domain.models.workflow import Workflow
 
@@ -28,16 +29,23 @@ class TestWorkflowExecution:
         calc_node = factory.create_node("Calculator", name="Calc")
 
         # Configure input node
-        input_node.update_state({
-            "properties": '[{"name": "a", "value": "10", "type": "number"}, {"name": "b", "value": "5", "type": "number"}]'
-        })
+        input_node.update_state(
+            {
+                "properties": (
+                    '[{"name": "a", "value": "10", "type": "number"}, '
+                    '{"name": "b", "value": "5", "type": "number"}]'
+                )
+            }
+        )
 
         # Configure calculator node with expressions
-        calc_node.update_state({
-            "field_a": "{{$node['Input'].data.a}}",
-            "field_b": "{{$node['Input'].data.b}}",
-            "operation": "+"
-        })
+        calc_node.update_state(
+            {
+                "field_a": "{{$node['Input'].data.a}}",
+                "field_b": "{{$node['Input'].data.b}}",
+                "operation": "+",
+            }
+        )
 
         # Add nodes to workflow
         workflow.add_node(input_node)
@@ -68,23 +76,28 @@ class TestWorkflowExecution:
         calc2 = factory.create_node("Calculator", name="Multiply")
 
         # Configure input
-        input_node.update_state({
-            "properties": '[{"name": "x", "value": "3", "type": "number"}, {"name": "y", "value": "4", "type": "number"}]'
-        })
+        input_node.update_state(
+            {
+                "properties": (
+                    '[{"name": "x", "value": "3", "type": "number"}, '
+                    '{"name": "y", "value": "4", "type": "number"}]'
+                )
+            }
+        )
 
         # Configure calc1: x + y = 7
-        calc1.update_state({
-            "field_a": "{{$node['Numbers'].data.x}}",
-            "field_b": "{{$node['Numbers'].data.y}}",
-            "operation": "+"
-        })
+        calc1.update_state(
+            {
+                "field_a": "{{$node['Numbers'].data.x}}",
+                "field_b": "{{$node['Numbers'].data.y}}",
+                "operation": "+",
+            }
+        )
 
         # Configure calc2: (x + y) * 2 = 14
-        calc2.update_state({
-            "field_a": "{{$node['Add'].data.result}}",
-            "field_b": "2",
-            "operation": "*"
-        })
+        calc2.update_state(
+            {"field_a": "{{$node['Add'].data.result}}", "field_b": "2", "operation": "*"}
+        )
 
         # Build workflow
         workflow.add_node(input_node)
@@ -96,8 +109,7 @@ class TestWorkflowExecution:
 
         # Execute
         result = container.workflow_orchestrator.execute_workflow(
-            workflow,
-            triggered_by=input_node.id
+            workflow, triggered_by=input_node.id
         )
 
         # Verify
@@ -118,11 +130,7 @@ class TestWorkflowExecution:
         calc_node = factory.create_node("Calculator")
 
         # Configure calculator with division by zero
-        calc_node.update_state({
-            "field_a": "10",
-            "field_b": "0",
-            "operation": "/"
-        })
+        calc_node.update_state({"field_a": "10", "field_b": "0", "operation": "/"})
 
         workflow.add_node(input_node)
         workflow.add_node(calc_node)
@@ -130,8 +138,7 @@ class TestWorkflowExecution:
 
         # Execute
         result = container.workflow_orchestrator.execute_workflow(
-            workflow,
-            triggered_by=input_node.id
+            workflow, triggered_by=input_node.id
         )
 
         # Verify execution failed
@@ -159,11 +166,7 @@ class TestNodeFactory:
 
         # Create and execute a calculator node
         calc = factory.create_node("Calculator")
-        calc.update_state({
-            "field_a": "5",
-            "field_b": "3",
-            "operation": "+"
-        })
+        calc.update_state({"field_a": "5", "field_b": "3", "operation": "+"})
 
         result = calc.execute({})
 
@@ -180,15 +183,20 @@ class TestExecutionContext:
 
         # Create nodes
         input_node = factory.create_node("Input", name="Data")
-        input_node.update_state({
-            "properties": '[{"name": "name", "value": "Alice", "type": "string"}, {"name": "age", "value": "30", "type": "number"}]'
-        })
+        input_node.update_state(
+            {
+                "properties": (
+                    '[{"name": "name", "value": "Alice", "type": "string"}, '
+                    '{"name": "age", "value": "30", "type": "number"}]'
+                )
+            }
+        )
 
         workflow.add_node(input_node)
 
         # Execute
         orchestrator = container.workflow_orchestrator
-        result = orchestrator.execute_workflow(workflow, triggered_by=input_node.id)
+        orchestrator.execute_workflow(workflow, triggered_by=input_node.id)
 
         # Verify context was built
         context = orchestrator.get_execution_manager().get_node_context()
@@ -205,14 +213,19 @@ class TestExecutionContext:
         input_node = factory.create_node("Input", name="Source")
         form_node = factory.create_node("Form", name="Destination")
 
-        input_node.update_state({
-            "properties": '[{"name": "value", "value": "42", "type": "string"}]'
-        })
+        input_node.update_state(
+            {"properties": '[{"name": "value", "value": "42", "type": "string"}]'}
+        )
 
         # Form uses expression to reference input
-        form_node.update_state({
-            "form_fields_json": '[{"name": "computed", "type": "string", "value": "{{$node[\'Source\'].data.value}}"}]'
-        })
+        form_node.update_state(
+            {
+                "form_fields_json": (
+                    '[{"name": "computed", "type": "string", '
+                    '"value": "{{$node[\'Source\'].data.value}}"}]'
+                )
+            }
+        )
 
         workflow.add_node(input_node)
         workflow.add_node(form_node)
@@ -220,8 +233,7 @@ class TestExecutionContext:
 
         # Execute
         result = container.workflow_orchestrator.execute_workflow(
-            workflow,
-            triggered_by=input_node.id
+            workflow, triggered_by=input_node.id
         )
 
         # Verify expression was resolved
@@ -245,10 +257,7 @@ class TestExecutionManager:
         workflow.add_node(input_node)
 
         # Execute
-        container.workflow_orchestrator.execute_workflow(
-            workflow,
-            triggered_by=input_node.id
-        )
+        container.workflow_orchestrator.execute_workflow(workflow, triggered_by=input_node.id)
 
         # Verify session was tracked
         history = manager.get_session_history()
@@ -267,11 +276,7 @@ class TestExecutionManager:
 
         # Create workflow
         calc_node = factory.create_node("Calculator", name="TestCalc")
-        calc_node.update_state({
-            "field_a": "10",
-            "field_b": "5",
-            "operation": "+"
-        })
+        calc_node.update_state({"field_a": "10", "field_b": "5", "operation": "+"})
 
         workflow.add_node(calc_node)
 
@@ -325,14 +330,7 @@ class TestServiceIntegration:
         """Test expression service integration."""
         expression_service = container.expression_service
 
-        context = {
-            "TestNode": {
-                "data": {
-                    "value": 42,
-                    "name": "Alice"
-                }
-            }
-        }
+        context = {"TestNode": {"data": {"value": 42, "name": "Alice"}}}
 
         # Resolve expressions
         result1 = expression_service.resolve("{{$node['TestNode'].data.value}}", context)

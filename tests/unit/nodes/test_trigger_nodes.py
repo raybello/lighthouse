@@ -1,15 +1,17 @@
 """Unit tests for trigger nodes (ManualTrigger and Input)."""
 
-import pytest
 import json
-from lighthouse.nodes.trigger.manual_trigger_node import ManualTriggerNode
-from lighthouse.nodes.trigger.input_node import InputNode
-from lighthouse.domain.models.node import NodeType
 
+import pytest
+
+from lighthouse.domain.models.node import NodeType
+from lighthouse.nodes.trigger.input_node import InputNode
+from lighthouse.nodes.trigger.manual_trigger_node import ManualTriggerNode
 
 # ============================================================================
 # ManualTriggerNode Tests
 # ============================================================================
+
 
 @pytest.fixture
 def manual_trigger_node():
@@ -71,6 +73,7 @@ class TestManualTriggerExecution:
 # InputNode Tests
 # ============================================================================
 
+
 @pytest.fixture
 def input_node():
     """Create an InputNode instance."""
@@ -121,9 +124,7 @@ class TestInputNodeExecution:
 
     def test_execute_with_string_property(self, input_node):
         """Test executing with a string property."""
-        properties = [
-            {"name": "username", "value": "john_doe", "type": "string"}
-        ]
+        properties = [{"name": "username", "value": "john_doe", "type": "string"}]
         input_node.set_state_value("properties", json.dumps(properties))
 
         result = input_node.execute({})
@@ -133,9 +134,7 @@ class TestInputNodeExecution:
 
     def test_execute_with_number_property(self, input_node):
         """Test executing with a number property."""
-        properties = [
-            {"name": "age", "value": "30", "type": "number"}
-        ]
+        properties = [{"name": "age", "value": "30", "type": "number"}]
         input_node.set_state_value("properties", json.dumps(properties))
 
         result = input_node.execute({})
@@ -145,9 +144,7 @@ class TestInputNodeExecution:
 
     def test_execute_with_float_property(self, input_node):
         """Test executing with a float property."""
-        properties = [
-            {"name": "price", "value": "19.99", "type": "number"}
-        ]
+        properties = [{"name": "price", "value": "19.99", "type": "number"}]
         input_node.set_state_value("properties", json.dumps(properties))
 
         result = input_node.execute({})
@@ -157,9 +154,7 @@ class TestInputNodeExecution:
 
     def test_execute_with_boolean_property(self, input_node):
         """Test executing with a boolean property."""
-        properties = [
-            {"name": "active", "value": "true", "type": "boolean"}
-        ]
+        properties = [{"name": "active", "value": "true", "type": "boolean"}]
         input_node.set_state_value("properties", json.dumps(properties))
 
         result = input_node.execute({})
@@ -170,9 +165,7 @@ class TestInputNodeExecution:
     def test_execute_with_object_property(self, input_node):
         """Test executing with an object property."""
         obj = {"nested": "value", "count": 42}
-        properties = [
-            {"name": "config", "value": obj, "type": "object"}
-        ]
+        properties = [{"name": "config", "value": obj, "type": "object"}]
         input_node.set_state_value("properties", json.dumps(properties))
 
         result = input_node.execute({})
@@ -263,9 +256,7 @@ class TestInputNodeValidation:
 
     def test_validate_valid_properties(self, input_node):
         """Test validation with valid properties."""
-        properties = [
-            {"name": "test", "value": "value", "type": "string"}
-        ]
+        properties = [{"name": "test", "value": "value", "type": "string"}]
         input_node.set_state_value("properties", json.dumps(properties))
 
         errors = input_node.validate()
@@ -308,9 +299,7 @@ class TestInputNodeValidation:
 
     def test_validate_empty_name(self, input_node):
         """Test validation with empty property name."""
-        properties = [
-            {"name": "", "value": "test", "type": "string"}
-        ]
+        properties = [{"name": "", "value": "test", "type": "string"}]
         input_node.set_state_value("properties", json.dumps(properties))
 
         errors = input_node.validate()
@@ -355,9 +344,7 @@ class TestInputNodeTypeConversion:
 
     def test_fallback_to_string_on_error(self, input_node):
         """Test that invalid conversions fall back to string."""
-        properties = [
-            {"name": "test", "value": "not_a_number", "type": "number"}
-        ]
+        properties = [{"name": "test", "value": "not_a_number", "type": "number"}]
         input_node.set_state_value("properties", json.dumps(properties))
 
         result = input_node.execute({})
@@ -402,7 +389,7 @@ class TestInputNodeEdgeCases:
         properties = [
             {"name": "valid", "value": "test"},
             "invalid_item",  # Not a dict
-            {"name": "also_valid", "value": "test2"}
+            {"name": "also_valid", "value": "test2"},
         ]
         input_node.set_state_value("properties", json.dumps(properties))
 

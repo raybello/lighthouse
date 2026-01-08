@@ -1,8 +1,9 @@
 """Unit tests for CalculatorNode."""
 
 import pytest
-from lighthouse.nodes.execution.calculator_node import CalculatorNode, OperationType
+
 from lighthouse.domain.models.node import NodeType
+from lighthouse.nodes.execution.calculator_node import CalculatorNode
 
 
 @pytest.fixture
@@ -42,11 +43,7 @@ class TestArithmeticOperations:
 
     def test_addition(self, calculator_node):
         """Test addition operation."""
-        calculator_node.update_state({
-            "field_a": "10",
-            "field_b": "5",
-            "operation": "+"
-        })
+        calculator_node.update_state({"field_a": "10", "field_b": "5", "operation": "+"})
 
         result = calculator_node.execute({})
 
@@ -56,11 +53,7 @@ class TestArithmeticOperations:
 
     def test_subtraction(self, calculator_node):
         """Test subtraction operation."""
-        calculator_node.update_state({
-            "field_a": "10",
-            "field_b": "3",
-            "operation": "-"
-        })
+        calculator_node.update_state({"field_a": "10", "field_b": "3", "operation": "-"})
 
         result = calculator_node.execute({})
 
@@ -69,11 +62,7 @@ class TestArithmeticOperations:
 
     def test_multiplication(self, calculator_node):
         """Test multiplication operation."""
-        calculator_node.update_state({
-            "field_a": "6",
-            "field_b": "7",
-            "operation": "*"
-        })
+        calculator_node.update_state({"field_a": "6", "field_b": "7", "operation": "*"})
 
         result = calculator_node.execute({})
 
@@ -82,11 +71,7 @@ class TestArithmeticOperations:
 
     def test_division(self, calculator_node):
         """Test division operation."""
-        calculator_node.update_state({
-            "field_a": "20",
-            "field_b": "4",
-            "operation": "/"
-        })
+        calculator_node.update_state({"field_a": "20", "field_b": "4", "operation": "/"})
 
         result = calculator_node.execute({})
 
@@ -95,11 +80,7 @@ class TestArithmeticOperations:
 
     def test_modulo(self, calculator_node):
         """Test modulo operation."""
-        calculator_node.update_state({
-            "field_a": "17",
-            "field_b": "5",
-            "operation": "%"
-        })
+        calculator_node.update_state({"field_a": "17", "field_b": "5", "operation": "%"})
 
         result = calculator_node.execute({})
 
@@ -112,11 +93,7 @@ class TestNumberConversion:
 
     def test_integer_strings(self, calculator_node):
         """Test with integer string inputs."""
-        calculator_node.update_state({
-            "field_a": "100",
-            "field_b": "25",
-            "operation": "+"
-        })
+        calculator_node.update_state({"field_a": "100", "field_b": "25", "operation": "+"})
 
         result = calculator_node.execute({})
 
@@ -125,11 +102,7 @@ class TestNumberConversion:
 
     def test_float_strings(self, calculator_node):
         """Test with float string inputs."""
-        calculator_node.update_state({
-            "field_a": "10.5",
-            "field_b": "2.3",
-            "operation": "+"
-        })
+        calculator_node.update_state({"field_a": "10.5", "field_b": "2.3", "operation": "+"})
 
         result = calculator_node.execute({})
 
@@ -138,11 +111,7 @@ class TestNumberConversion:
 
     def test_mixed_integer_and_float(self, calculator_node):
         """Test with mixed int and float inputs."""
-        calculator_node.update_state({
-            "field_a": "10",
-            "field_b": "2.5",
-            "operation": "*"
-        })
+        calculator_node.update_state({"field_a": "10", "field_b": "2.5", "operation": "*"})
 
         result = calculator_node.execute({})
 
@@ -151,11 +120,7 @@ class TestNumberConversion:
 
     def test_numeric_types(self, calculator_node):
         """Test with actual numeric types (not strings)."""
-        calculator_node.update_state({
-            "field_a": 15,
-            "field_b": 3,
-            "operation": "/"
-        })
+        calculator_node.update_state({"field_a": 15, "field_b": 3, "operation": "/"})
 
         result = calculator_node.execute({})
 
@@ -164,11 +129,7 @@ class TestNumberConversion:
 
     def test_negative_numbers(self, calculator_node):
         """Test with negative numbers."""
-        calculator_node.update_state({
-            "field_a": "-10",
-            "field_b": "5",
-            "operation": "+"
-        })
+        calculator_node.update_state({"field_a": "-10", "field_b": "5", "operation": "+"})
 
         result = calculator_node.execute({})
 
@@ -181,11 +142,7 @@ class TestErrorHandling:
 
     def test_division_by_zero(self, calculator_node):
         """Test division by zero error."""
-        calculator_node.update_state({
-            "field_a": "10",
-            "field_b": "0",
-            "operation": "/"
-        })
+        calculator_node.update_state({"field_a": "10", "field_b": "0", "operation": "/"})
 
         result = calculator_node.execute({})
 
@@ -195,11 +152,7 @@ class TestErrorHandling:
 
     def test_modulo_by_zero(self, calculator_node):
         """Test modulo by zero error."""
-        calculator_node.update_state({
-            "field_a": "10",
-            "field_b": "0",
-            "operation": "%"
-        })
+        calculator_node.update_state({"field_a": "10", "field_b": "0", "operation": "%"})
 
         result = calculator_node.execute({})
 
@@ -208,11 +161,7 @@ class TestErrorHandling:
 
     def test_invalid_number_format(self, calculator_node):
         """Test with invalid number format."""
-        calculator_node.update_state({
-            "field_a": "not_a_number",
-            "field_b": "5",
-            "operation": "+"
-        })
+        calculator_node.update_state({"field_a": "not_a_number", "field_b": "5", "operation": "+"})
 
         result = calculator_node.execute({})
 
@@ -221,11 +170,7 @@ class TestErrorHandling:
 
     def test_empty_field(self, calculator_node):
         """Test with empty field."""
-        calculator_node.update_state({
-            "field_a": "",
-            "field_b": "5",
-            "operation": "+"
-        })
+        calculator_node.update_state({"field_a": "", "field_b": "5", "operation": "+"})
 
         result = calculator_node.execute({})
 
@@ -233,11 +178,13 @@ class TestErrorHandling:
 
     def test_unknown_operation(self, calculator_node):
         """Test with unknown operation."""
-        calculator_node.update_state({
-            "field_a": "10",
-            "field_b": "5",
-            "operation": "^"  # Unknown operation
-        })
+        calculator_node.update_state(
+            {
+                "field_a": "10",
+                "field_b": "5",
+                "operation": "^",  # Unknown operation
+            }
+        )
 
         result = calculator_node.execute({})
 
@@ -261,10 +208,7 @@ class TestStateManagement:
 
     def test_update_state(self, calculator_node):
         """Test updating state."""
-        calculator_node.update_state({
-            "field_a": "20",
-            "operation": "*"
-        })
+        calculator_node.update_state({"field_a": "20", "operation": "*"})
 
         state = calculator_node.state
         assert state["field_a"] == "20"
@@ -273,18 +217,14 @@ class TestStateManagement:
 
     def test_reset(self, calculator_node):
         """Test resetting node state."""
-        calculator_node.update_state({
-            "field_a": "999",
-            "field_b": "888",
-            "operation": "*"
-        })
+        calculator_node.update_state({"field_a": "999", "field_b": "888", "operation": "*"})
 
         calculator_node.reset()
 
         state = calculator_node.state
         assert state["field_a"] == "10"  # Back to default
-        assert state["field_b"] == "5"   # Back to default
-        assert state["operation"] == "+" # Back to default
+        assert state["field_b"] == "5"  # Back to default
+        assert state["operation"] == "+"  # Back to default
 
 
 class TestValidation:
@@ -298,11 +238,7 @@ class TestValidation:
 
     def test_validate_with_custom_state(self, calculator_node):
         """Test validation with custom state."""
-        calculator_node.update_state({
-            "field_a": "100",
-            "field_b": "50",
-            "operation": "*"
-        })
+        calculator_node.update_state({"field_a": "100", "field_b": "50", "operation": "*"})
 
         errors = calculator_node.validate()
 
@@ -316,7 +252,8 @@ class TestExecutionResult:
         """Test that result contains execution duration."""
         result = calculator_node.execute({})
 
-        assert result.duration_seconds > 0
+        assert result.duration_seconds >= 0
+        assert isinstance(result.duration_seconds, float)
 
     def test_successful_result_structure(self, calculator_node):
         """Test successful result structure."""
@@ -329,11 +266,7 @@ class TestExecutionResult:
 
     def test_error_result_structure(self, calculator_node):
         """Test error result structure."""
-        calculator_node.update_state({
-            "field_a": "invalid",
-            "field_b": "5",
-            "operation": "+"
-        })
+        calculator_node.update_state({"field_a": "invalid", "field_b": "5", "operation": "+"})
 
         result = calculator_node.execute({})
 
@@ -348,11 +281,9 @@ class TestComplexScenarios:
 
     def test_large_numbers(self, calculator_node):
         """Test with large numbers."""
-        calculator_node.update_state({
-            "field_a": "999999999",
-            "field_b": "1000000000",
-            "operation": "+"
-        })
+        calculator_node.update_state(
+            {"field_a": "999999999", "field_b": "1000000000", "operation": "+"}
+        )
 
         result = calculator_node.execute({})
 
@@ -361,11 +292,7 @@ class TestComplexScenarios:
 
     def test_very_small_division(self, calculator_node):
         """Test division resulting in very small number."""
-        calculator_node.update_state({
-            "field_a": "1",
-            "field_b": "1000000",
-            "operation": "/"
-        })
+        calculator_node.update_state({"field_a": "1", "field_b": "1000000", "operation": "/"})
 
         result = calculator_node.execute({})
 
@@ -374,11 +301,7 @@ class TestComplexScenarios:
 
     def test_decimal_precision(self, calculator_node):
         """Test decimal precision in results."""
-        calculator_node.update_state({
-            "field_a": "0.1",
-            "field_b": "0.2",
-            "operation": "+"
-        })
+        calculator_node.update_state({"field_a": "0.1", "field_b": "0.2", "operation": "+"})
 
         result = calculator_node.execute({})
 

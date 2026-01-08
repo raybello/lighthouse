@@ -1,14 +1,15 @@
 """Unit tests for NodeRegistry."""
 
 import pytest
-from lighthouse.nodes.registry import NodeRegistry, get_registry, reset_registry
-from lighthouse.nodes.base.base_node import BaseNode, ExecutionNode, TriggerNode
+
+from lighthouse.nodes.base.base_node import ExecutionNode, TriggerNode
 from lighthouse.nodes.execution.calculator_node import CalculatorNode
-from lighthouse.nodes.trigger.manual_trigger_node import ManualTriggerNode
+from lighthouse.nodes.registry import NodeRegistry, get_registry, reset_registry
 
 
 class DummyNode(ExecutionNode):
     """Dummy node for testing."""
+
     pass
 
 
@@ -62,6 +63,7 @@ class TestNodeRegistration:
 
     def test_register_non_node_class_raises_error(self, registry):
         """Test that registering non-node class raises error."""
+
         class NotANode:
             pass
 

@@ -1,13 +1,14 @@
 """Unit tests for ContextBuilder."""
 
+
 import pytest
-from lighthouse.domain.services.context_builder import ContextBuilder
+
 from lighthouse.domain.models.execution import (
     ExecutionSession,
     ExecutionStatus,
     NodeExecutionRecord,
 )
-from datetime import datetime
+from lighthouse.domain.services.context_builder import ContextBuilder
 
 
 @pytest.fixture
@@ -59,9 +60,7 @@ def sample_session():
 class TestBuildContext:
     """Tests for building context from execution sessions."""
 
-    def test_build_context_from_completed_nodes(
-        self, context_builder, sample_session
-    ):
+    def test_build_context_from_completed_nodes(self, context_builder, sample_session):
         """Test building context from completed nodes."""
         completed = ["node1", "node2"]
 
@@ -72,17 +71,13 @@ class TestBuildContext:
         assert context["Input"] == {"data": {"name": "John", "age": 30}}
         assert context["Calculator"] == {"data": {"result": 42}}
 
-    def test_build_context_empty_completed_list(
-        self, context_builder, sample_session
-    ):
+    def test_build_context_empty_completed_list(self, context_builder, sample_session):
         """Test building context with no completed nodes."""
         context = context_builder.build_context(sample_session, [])
 
         assert context == {}
 
-    def test_build_context_skips_pending_nodes(
-        self, context_builder, sample_session
-    ):
+    def test_build_context_skips_pending_nodes(self, context_builder, sample_session):
         """Test that pending nodes are not included in context."""
         completed = ["node1", "node2", "node3"]
 
@@ -137,9 +132,7 @@ class TestUpdateContext:
         """Test updating context with a new node output."""
         context = {"Node1": {"data": {"value": 1}}}
 
-        new_context = context_builder.update_context(
-            context, "Node2", {"data": {"value": 2}}
-        )
+        new_context = context_builder.update_context(context, "Node2", {"data": {"value": 2}})
 
         assert "Node2" in new_context
         assert new_context["Node2"] == {"data": {"value": 2}}
@@ -150,9 +143,7 @@ class TestUpdateContext:
         """Test that updating overwrites existing node."""
         context = {"Node1": {"data": {"value": 1}}}
 
-        new_context = context_builder.update_context(
-            context, "Node1", {"data": {"value": 99}}
-        )
+        new_context = context_builder.update_context(context, "Node1", {"data": {"value": 99}})
 
         assert new_context["Node1"] == {"data": {"value": 99}}
         # Original context should be unchanged
@@ -231,9 +222,7 @@ class TestFilterContext:
         """Test filtering with non-existent node names."""
         context = {"Node1": {"data": 1}}
 
-        filtered = context_builder.filter_context(
-            context, ["Node1", "NonExistent"]
-        )
+        filtered = context_builder.filter_context(context, ["Node1", "NonExistent"])
 
         # Should only include existing nodes
         assert filtered == {"Node1": {"data": 1}}

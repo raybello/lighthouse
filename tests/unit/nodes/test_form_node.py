@@ -1,7 +1,9 @@
 """Unit tests for FormNode."""
 
-import pytest
 import json
+
+import pytest
+
 from lighthouse.nodes.execution.form_node import FormNode
 
 
@@ -49,9 +51,7 @@ class TestFormExecution:
 
     def test_execute_with_string_field(self, form_node):
         """Test executing form with string field."""
-        form_node.update_form_fields([
-            {"name": "username", "type": "string", "value": "Alice"}
-        ])
+        form_node.update_form_fields([{"name": "username", "type": "string", "value": "Alice"}])
 
         result = form_node.execute({})
 
@@ -60,9 +60,7 @@ class TestFormExecution:
 
     def test_execute_with_number_field(self, form_node):
         """Test executing form with number field."""
-        form_node.update_form_fields([
-            {"name": "age", "type": "number", "value": "30"}
-        ])
+        form_node.update_form_fields([{"name": "age", "type": "number", "value": "30"}])
 
         result = form_node.execute({})
 
@@ -71,9 +69,7 @@ class TestFormExecution:
 
     def test_execute_with_float_field(self, form_node):
         """Test executing form with float field."""
-        form_node.update_form_fields([
-            {"name": "price", "type": "number", "value": "19.99"}
-        ])
+        form_node.update_form_fields([{"name": "price", "type": "number", "value": "19.99"}])
 
         result = form_node.execute({})
 
@@ -82,9 +78,7 @@ class TestFormExecution:
 
     def test_execute_with_boolean_field(self, form_node):
         """Test executing form with boolean field."""
-        form_node.update_form_fields([
-            {"name": "isActive", "type": "boolean", "value": "true"}
-        ])
+        form_node.update_form_fields([{"name": "isActive", "type": "boolean", "value": "true"}])
 
         result = form_node.execute({})
 
@@ -93,9 +87,9 @@ class TestFormExecution:
 
     def test_execute_with_object_field(self, form_node):
         """Test executing form with object field."""
-        form_node.update_form_fields([
-            {"name": "config", "type": "object", "value": '{"key": "value"}'}
-        ])
+        form_node.update_form_fields(
+            [{"name": "config", "type": "object", "value": '{"key": "value"}'}]
+        )
 
         result = form_node.execute({})
 
@@ -104,11 +98,13 @@ class TestFormExecution:
 
     def test_execute_with_multiple_fields(self, form_node):
         """Test executing form with multiple fields."""
-        form_node.update_form_fields([
-            {"name": "name", "type": "string", "value": "Bob"},
-            {"name": "age", "type": "number", "value": "25"},
-            {"name": "active", "type": "boolean", "value": "true"}
-        ])
+        form_node.update_form_fields(
+            [
+                {"name": "name", "type": "string", "value": "Bob"},
+                {"name": "age", "type": "number", "value": "25"},
+                {"name": "active", "type": "boolean", "value": "true"},
+            ]
+        )
 
         result = form_node.execute({})
 
@@ -119,11 +115,13 @@ class TestFormExecution:
 
     def test_execute_result_includes_all_fields(self, form_node):
         """Test that result includes all non-empty field names."""
-        form_node.update_form_fields([
-            {"name": "field1", "type": "string", "value": "value1"},
-            {"name": "field2", "type": "number", "value": "42"},
-            {"name": "", "type": "string", "value": "ignored"},  # Empty name
-        ])
+        form_node.update_form_fields(
+            [
+                {"name": "field1", "type": "string", "value": "value1"},
+                {"name": "field2", "type": "number", "value": "42"},
+                {"name": "", "type": "string", "value": "ignored"},  # Empty name
+            ]
+        )
 
         result = form_node.execute({})
 
@@ -191,9 +189,7 @@ class TestFormFieldManagement:
 
     def test_update_form_fields(self, form_node):
         """Test updating form fields."""
-        new_fields = [
-            {"name": "email", "type": "string", "value": "test@example.com"}
-        ]
+        new_fields = [{"name": "email", "type": "string", "value": "test@example.com"}]
 
         form_node.update_form_fields(new_fields)
 
@@ -201,9 +197,7 @@ class TestFormFieldManagement:
 
     def test_json_serialization(self, form_node):
         """Test JSON serialization of form fields."""
-        fields = [
-            {"name": "test", "type": "string", "value": "value"}
-        ]
+        fields = [{"name": "test", "type": "string", "value": "value"}]
         form_node.form_fields = fields
 
         json_str = form_node._fields_to_json()
@@ -215,9 +209,7 @@ class TestFormFieldManagement:
 
     def test_json_deserialization(self, form_node):
         """Test JSON deserialization of form fields."""
-        fields = [
-            {"name": "test", "type": "number", "value": "42"}
-        ]
+        fields = [{"name": "test", "type": "number", "value": "42"}]
         json_str = json.dumps(fields)
 
         form_node._json_to_fields(json_str)
@@ -293,9 +285,7 @@ class TestValidation:
 
     def test_validate_empty_field_name(self, form_node):
         """Test validation catches empty field names."""
-        form_node.update_form_fields([
-            {"name": "", "type": "string", "value": "test"}
-        ])
+        form_node.update_form_fields([{"name": "", "type": "string", "value": "test"}])
 
         errors = form_node.validate()
 
@@ -304,9 +294,7 @@ class TestValidation:
 
     def test_validate_invalid_field_name(self, form_node):
         """Test validation catches invalid field names."""
-        form_node.update_form_fields([
-            {"name": "field-name!", "type": "string", "value": "test"}
-        ])
+        form_node.update_form_fields([{"name": "field-name!", "type": "string", "value": "test"}])
 
         errors = form_node.validate()
 
@@ -315,10 +303,12 @@ class TestValidation:
 
     def test_validate_duplicate_field_names(self, form_node):
         """Test validation catches duplicate field names."""
-        form_node.update_form_fields([
-            {"name": "field1", "type": "string", "value": "a"},
-            {"name": "field1", "type": "number", "value": "1"}
-        ])
+        form_node.update_form_fields(
+            [
+                {"name": "field1", "type": "string", "value": "a"},
+                {"name": "field1", "type": "number", "value": "1"},
+            ]
+        )
 
         errors = form_node.validate()
 
@@ -327,9 +317,7 @@ class TestValidation:
 
     def test_validate_invalid_field_type(self, form_node):
         """Test validation catches invalid field types."""
-        form_node.update_form_fields([
-            {"name": "field1", "type": "invalid_type", "value": "test"}
-        ])
+        form_node.update_form_fields([{"name": "field1", "type": "invalid_type", "value": "test"}])
 
         errors = form_node.validate()
 
@@ -338,9 +326,7 @@ class TestValidation:
 
     def test_validate_number_field_invalid_value(self, form_node):
         """Test validation catches invalid number values."""
-        form_node.update_form_fields([
-            {"name": "age", "type": "number", "value": "not a number"}
-        ])
+        form_node.update_form_fields([{"name": "age", "type": "number", "value": "not a number"}])
 
         errors = form_node.validate()
 
@@ -349,9 +335,7 @@ class TestValidation:
 
     def test_validate_boolean_field_invalid_value(self, form_node):
         """Test validation catches invalid boolean values."""
-        form_node.update_form_fields([
-            {"name": "active", "type": "boolean", "value": "maybe"}
-        ])
+        form_node.update_form_fields([{"name": "active", "type": "boolean", "value": "maybe"}])
 
         errors = form_node.validate()
 
@@ -360,9 +344,7 @@ class TestValidation:
 
     def test_validate_object_field_invalid_value(self, form_node):
         """Test validation catches invalid object values."""
-        form_node.update_form_fields([
-            {"name": "config", "type": "object", "value": "not json"}
-        ])
+        form_node.update_form_fields([{"name": "config", "type": "object", "value": "not json"}])
 
         errors = form_node.validate()
 
@@ -371,10 +353,12 @@ class TestValidation:
 
     def test_validate_expression_values_skip_validation(self, form_node):
         """Test that expression values skip type validation."""
-        form_node.update_form_fields([
-            {"name": "age", "type": "number", "value": "{{$node['Input'].data.age}}"},
-            {"name": "active", "type": "boolean", "value": "{{$node['Input'].data.active}}"}
-        ])
+        form_node.update_form_fields(
+            [
+                {"name": "age", "type": "number", "value": "{{$node['Input'].data.age}}"},
+                {"name": "active", "type": "boolean", "value": "{{$node['Input'].data.active}}"},
+            ]
+        )
 
         errors = form_node.validate()
 
@@ -387,9 +371,7 @@ class TestStateManagement:
 
     def test_state_persistence(self, form_node):
         """Test that form fields persist across updates."""
-        new_fields = [
-            {"name": "email", "type": "string", "value": "test@example.com"}
-        ]
+        new_fields = [{"name": "email", "type": "string", "value": "test@example.com"}]
 
         form_node.update_form_fields(new_fields)
 
@@ -398,10 +380,12 @@ class TestStateManagement:
 
     def test_field_name_with_underscores(self, form_node):
         """Test that field names with underscores are valid."""
-        form_node.update_form_fields([
-            {"name": "first_name", "type": "string", "value": "Alice"},
-            {"name": "last_name", "type": "string", "value": "Bob"}
-        ])
+        form_node.update_form_fields(
+            [
+                {"name": "first_name", "type": "string", "value": "Alice"},
+                {"name": "last_name", "type": "string", "value": "Bob"},
+            ]
+        )
 
         errors = form_node.validate()
         assert errors == []
@@ -412,9 +396,7 @@ class TestExecutionResult:
 
     def test_result_has_duration(self, form_node):
         """Test that result includes execution duration."""
-        form_node.update_form_fields([
-            {"name": "test", "type": "string", "value": "value"}
-        ])
+        form_node.update_form_fields([{"name": "test", "type": "string", "value": "value"}])
 
         result = form_node.execute({})
 
@@ -422,9 +404,7 @@ class TestExecutionResult:
 
     def test_successful_result_structure(self, form_node):
         """Test structure of successful result."""
-        form_node.update_form_fields([
-            {"name": "test", "type": "string", "value": "value"}
-        ])
+        form_node.update_form_fields([{"name": "test", "type": "string", "value": "value"}])
 
         result = form_node.execute({})
 
@@ -448,14 +428,16 @@ class TestComplexScenarios:
 
     def test_mixed_field_types(self, form_node):
         """Test form with all field types."""
-        form_node.update_form_fields([
-            {"name": "name", "type": "string", "value": "Alice"},
-            {"name": "age", "type": "number", "value": "30"},
-            {"name": "score", "type": "number", "value": "95.5"},
-            {"name": "active", "type": "boolean", "value": "true"},
-            {"name": "tags", "type": "object", "value": '["a", "b", "c"]'},
-            {"name": "config", "type": "object", "value": '{"key": "value"}'}
-        ])
+        form_node.update_form_fields(
+            [
+                {"name": "name", "type": "string", "value": "Alice"},
+                {"name": "age", "type": "number", "value": "30"},
+                {"name": "score", "type": "number", "value": "95.5"},
+                {"name": "active", "type": "boolean", "value": "true"},
+                {"name": "tags", "type": "object", "value": '["a", "b", "c"]'},
+                {"name": "config", "type": "object", "value": '{"key": "value"}'},
+            ]
+        )
 
         result = form_node.execute({})
 
@@ -469,10 +451,7 @@ class TestComplexScenarios:
 
     def test_many_fields(self, form_node):
         """Test form with many fields."""
-        fields = [
-            {"name": f"field{i}", "type": "string", "value": f"value{i}"}
-            for i in range(20)
-        ]
+        fields = [{"name": f"field{i}", "type": "string", "value": f"value{i}"} for i in range(20)]
 
         form_node.update_form_fields(fields)
 
@@ -485,13 +464,15 @@ class TestComplexScenarios:
 
     def test_nested_json_objects(self, form_node):
         """Test form with nested JSON objects."""
-        form_node.update_form_fields([
-            {
-                "name": "user",
-                "type": "object",
-                "value": '{"name": "Alice", "address": {"city": "NYC", "zip": "10001"}}'
-            }
-        ])
+        form_node.update_form_fields(
+            [
+                {
+                    "name": "user",
+                    "type": "object",
+                    "value": '{"name": "Alice", "address": {"city": "NYC", "zip": "10001"}}',
+                }
+            ]
+        )
 
         result = form_node.execute({})
 

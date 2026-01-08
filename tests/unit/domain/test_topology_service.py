@@ -1,11 +1,12 @@
 """Unit tests for TopologyService."""
 
 import pytest
-from lighthouse.domain.services.topology_service import TopologyService
-from lighthouse.domain.models.workflow import Workflow
-from lighthouse.domain.models.node import Node, NodeMetadata, NodeType
-from lighthouse.domain.models.field_types import FieldDefinition, FieldType
+
 from lighthouse.domain.exceptions import CycleDetectedError
+from lighthouse.domain.models.field_types import FieldDefinition, FieldType
+from lighthouse.domain.models.node import Node, NodeMetadata, NodeType
+from lighthouse.domain.models.workflow import Workflow
+from lighthouse.domain.services.topology_service import TopologyService
 
 
 @pytest.fixture

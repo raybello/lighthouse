@@ -1,15 +1,14 @@
 """Tests for async workflow execution."""
 
 import time
-from typing import Any, Dict, List
-from unittest.mock import Mock
+from typing import Any, Dict
 
 import pytest
 
 from lighthouse.application.services.workflow_orchestrator import WorkflowOrchestrator
 from lighthouse.domain.models.workflow import Workflow
-from lighthouse.nodes.trigger.manual_trigger_node import ManualTriggerNode
 from lighthouse.nodes.execution.calculator_node import CalculatorNode
+from lighthouse.nodes.trigger.manual_trigger_node import ManualTriggerNode
 
 
 class TestAsyncWorkflowExecution:

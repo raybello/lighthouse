@@ -1,7 +1,9 @@
 """Unit tests for ChatModelNode."""
 
-import pytest
 from unittest.mock import Mock
+
+import pytest
+
 from lighthouse.nodes.execution.chat_model_node import ChatModelNode
 
 
@@ -22,15 +24,11 @@ def mock_llm_response():
             {
                 "message": {
                     "role": "assistant",
-                    "content": "Hello! I'm an AI assistant ready to help you."
+                    "content": "Hello! I'm an AI assistant ready to help you.",
                 }
             }
         ],
-        "usage": {
-            "prompt_tokens": 20,
-            "completion_tokens": 15,
-            "total_tokens": 35
-        }
+        "usage": {"prompt_tokens": 20, "completion_tokens": 15, "total_tokens": 35},
     }
     return response
 
@@ -47,7 +45,9 @@ class TestChatModelNodeInitialization:
         """Test node metadata."""
         metadata = chat_model_node.metadata
         assert metadata.name == "ChatModel"
-        assert len(metadata.fields) == 7  # model, base_url, temperature, max_tokens, timeout, system_prompt, query
+        assert (
+            len(metadata.fields) == 7
+        )  # model, base_url, temperature, max_tokens, timeout, system_prompt, query
 
     def test_default_state(self, chat_model_node):
         """Test default state values."""
@@ -66,14 +66,16 @@ class TestModelExecution:
 
     def test_successful_query(self, chat_model_node, mock_llm_response, mocker):
         """Test successful LLM query."""
-        mock_post = mocker.patch('requests.post', return_value=mock_llm_response)
+        mock_post = mocker.patch("requests.post", return_value=mock_llm_response)
 
-        chat_model_node.update_state({
-            "model": "gemma-3",
-            "base_url": "http://localhost:8080",
-            "query": "What is Python?",
-            "timeout": 10,
-        })
+        chat_model_node.update_state(
+            {
+                "model": "gemma-3",
+                "base_url": "http://localhost:8080",
+                "query": "What is Python?",
+                "timeout": 10,
+            }
+        )
 
         result = chat_model_node.execute({})
 
@@ -85,14 +87,16 @@ class TestModelExecution:
 
     def test_query_with_system_prompt(self, chat_model_node, mock_llm_response, mocker):
         """Test query with custom system prompt."""
-        mock_post = mocker.patch('requests.post', return_value=mock_llm_response)
+        mock_post = mocker.patch("requests.post", return_value=mock_llm_response)
 
-        chat_model_node.update_state({
-            "model": "gpt-4",
-            "base_url": "http://localhost:8080",
-            "system_prompt": "You are a Python expert.",
-            "query": "Explain decorators",
-        })
+        chat_model_node.update_state(
+            {
+                "model": "gpt-4",
+                "base_url": "http://localhost:8080",
+                "system_prompt": "You are a Python expert.",
+                "query": "Explain decorators",
+            }
+        )
 
         result = chat_model_node.execute({})
 
@@ -108,12 +112,14 @@ class TestModelExecution:
 
     def test_query_without_system_prompt(self, chat_model_node, mock_llm_response, mocker):
         """Test query without system prompt."""
-        mock_post = mocker.patch('requests.post', return_value=mock_llm_response)
+        mock_post = mocker.patch("requests.post", return_value=mock_llm_response)
 
-        chat_model_node.update_state({
-            "system_prompt": "",
-            "query": "Hello world",
-        })
+        chat_model_node.update_state(
+            {
+                "system_prompt": "",
+                "query": "Hello world",
+            }
+        )
 
         result = chat_model_node.execute({})
 
@@ -126,13 +132,15 @@ class TestModelExecution:
 
     def test_custom_parameters(self, chat_model_node, mock_llm_response, mocker):
         """Test with custom temperature and max_tokens."""
-        mock_post = mocker.patch('requests.post', return_value=mock_llm_response)
+        mock_post = mocker.patch("requests.post", return_value=mock_llm_response)
 
-        chat_model_node.update_state({
-            "temperature": 0.8,
-            "max_tokens": 1000,
-            "query": "Be creative",
-        })
+        chat_model_node.update_state(
+            {
+                "temperature": 0.8,
+                "max_tokens": 1000,
+                "query": "Be creative",
+            }
+        )
 
         result = chat_model_node.execute({})
 
@@ -143,7 +151,7 @@ class TestModelExecution:
 
     def test_result_includes_all_fields(self, chat_model_node, mock_llm_response, mocker):
         """Test that result includes all expected fields."""
-        mocker.patch('requests.post', return_value=mock_llm_response)
+        mocker.patch("requests.post", return_value=mock_llm_response)
 
         chat_model_node.update_state({"query": "test"})
         result = chat_model_node.execute({})
@@ -159,12 +167,15 @@ class TestErrorHandling:
     def test_timeout_error(self, chat_model_node, mocker):
         """Test handling request timeout."""
         import requests
-        mocker.patch('requests.post', side_effect=requests.Timeout("Request timed out"))
 
-        chat_model_node.update_state({
-            "query": "Long running query",
-            "timeout": 1,
-        })
+        mocker.patch("requests.post", side_effect=requests.Timeout("Request timed out"))
+
+        chat_model_node.update_state(
+            {
+                "query": "Long running query",
+                "timeout": 1,
+            }
+        )
 
         result = chat_model_node.execute({})
 
@@ -174,7 +185,8 @@ class TestErrorHandling:
     def test_connection_error(self, chat_model_node, mocker):
         """Test handling connection error."""
         import requests
-        mocker.patch('requests.post', side_effect=requests.ConnectionError("Failed to connect"))
+
+        mocker.patch("requests.post", side_effect=requests.ConnectionError("Failed to connect"))
 
         chat_model_node.update_state({"query": "test"})
 
@@ -186,10 +198,11 @@ class TestErrorHandling:
     def test_http_error(self, chat_model_node, mocker):
         """Test handling HTTP error."""
         import requests
+
         mock_response = Mock()
         mock_response.raise_for_status.side_effect = requests.HTTPError("500 Server Error")
 
-        mocker.patch('requests.post', return_value=mock_response)
+        mocker.patch("requests.post", return_value=mock_response)
 
         chat_model_node.update_state({"query": "test"})
 
@@ -210,10 +223,12 @@ class TestErrorHandling:
 
     def test_empty_base_url_error(self, chat_model_node):
         """Test error with empty base URL."""
-        chat_model_node.update_state({
-            "base_url": "",
-            "query": "test",
-        })
+        chat_model_node.update_state(
+            {
+                "base_url": "",
+                "query": "test",
+            }
+        )
 
         result = chat_model_node.execute({})
 
@@ -227,7 +242,7 @@ class TestErrorHandling:
         mock_response.json.return_value = {"invalid": "format"}
         mock_response.raise_for_status.return_value = None
 
-        mocker.patch('requests.post', return_value=mock_response)
+        mocker.patch("requests.post", return_value=mock_response)
 
         chat_model_node.update_state({"query": "test"})
 
@@ -238,10 +253,12 @@ class TestErrorHandling:
 
     def test_invalid_numeric_parameters(self, chat_model_node):
         """Test error with invalid numeric parameters."""
-        chat_model_node.update_state({
-            "temperature": "not a number",
-            "query": "test",
-        })
+        chat_model_node.update_state(
+            {
+                "temperature": "not a number",
+                "query": "test",
+            }
+        )
 
         result = chat_model_node.execute({})
 
@@ -254,12 +271,14 @@ class TestAPIIntegration:
 
     def test_correct_endpoint_format(self, chat_model_node, mock_llm_response, mocker):
         """Test that correct API endpoint is called."""
-        mock_post = mocker.patch('requests.post', return_value=mock_llm_response)
+        mock_post = mocker.patch("requests.post", return_value=mock_llm_response)
 
-        chat_model_node.update_state({
-            "base_url": "http://localhost:8080",
-            "query": "test",
-        })
+        chat_model_node.update_state(
+            {
+                "base_url": "http://localhost:8080",
+                "query": "test",
+            }
+        )
 
         chat_model_node.execute({})
 
@@ -269,12 +288,14 @@ class TestAPIIntegration:
 
     def test_endpoint_with_trailing_slash(self, chat_model_node, mock_llm_response, mocker):
         """Test that trailing slash in base URL is handled."""
-        mock_post = mocker.patch('requests.post', return_value=mock_llm_response)
+        mock_post = mocker.patch("requests.post", return_value=mock_llm_response)
 
-        chat_model_node.update_state({
-            "base_url": "http://localhost:8080/",
-            "query": "test",
-        })
+        chat_model_node.update_state(
+            {
+                "base_url": "http://localhost:8080/",
+                "query": "test",
+            }
+        )
 
         chat_model_node.execute({})
 
@@ -283,14 +304,16 @@ class TestAPIIntegration:
 
     def test_request_payload_structure(self, chat_model_node, mock_llm_response, mocker):
         """Test that request payload has correct structure."""
-        mock_post = mocker.patch('requests.post', return_value=mock_llm_response)
+        mock_post = mocker.patch("requests.post", return_value=mock_llm_response)
 
-        chat_model_node.update_state({
-            "model": "custom-model",
-            "temperature": 0.5,
-            "max_tokens": 250,
-            "query": "test query",
-        })
+        chat_model_node.update_state(
+            {
+                "model": "custom-model",
+                "temperature": 0.5,
+                "max_tokens": 250,
+                "query": "test query",
+            }
+        )
 
         chat_model_node.execute({})
 
@@ -307,12 +330,14 @@ class TestAPIIntegration:
 
     def test_timeout_parameter_passed(self, chat_model_node, mock_llm_response, mocker):
         """Test that timeout is passed to request."""
-        mock_post = mocker.patch('requests.post', return_value=mock_llm_response)
+        mock_post = mocker.patch("requests.post", return_value=mock_llm_response)
 
-        chat_model_node.update_state({
-            "timeout": 60,
-            "query": "test",
-        })
+        chat_model_node.update_state(
+            {
+                "timeout": 60,
+                "query": "test",
+            }
+        )
 
         chat_model_node.execute({})
 
@@ -433,11 +458,13 @@ class TestStateManagement:
 
     def test_state_persistence(self, chat_model_node):
         """Test that state persists across updates."""
-        chat_model_node.update_state({
-            "model": "gpt-4",
-            "base_url": "https://api.openai.com",
-            "temperature": 0.7,
-        })
+        chat_model_node.update_state(
+            {
+                "model": "gpt-4",
+                "base_url": "https://api.openai.com",
+                "temperature": 0.7,
+            }
+        )
 
         state = chat_model_node.state
 
@@ -448,7 +475,7 @@ class TestStateManagement:
 
     def test_parameter_type_conversion(self, chat_model_node, mock_llm_response, mocker):
         """Test that parameters are converted to correct types."""
-        mock_post = mocker.patch('requests.post', return_value=mock_llm_response)
+        mock_post = mocker.patch("requests.post", return_value=mock_llm_response)
 
         chat_model_node.set_state_value("temperature", "0.5")
         chat_model_node.set_state_value("max_tokens", "750")
@@ -469,7 +496,7 @@ class TestExecutionResult:
 
     def test_result_has_duration(self, chat_model_node, mock_llm_response, mocker):
         """Test that result includes execution duration."""
-        mocker.patch('requests.post', return_value=mock_llm_response)
+        mocker.patch("requests.post", return_value=mock_llm_response)
 
         chat_model_node.update_state({"query": "test"})
         result = chat_model_node.execute({})
@@ -478,7 +505,7 @@ class TestExecutionResult:
 
     def test_successful_result_structure(self, chat_model_node, mock_llm_response, mocker):
         """Test structure of successful result."""
-        mocker.patch('requests.post', return_value=mock_llm_response)
+        mocker.patch("requests.post", return_value=mock_llm_response)
 
         chat_model_node.update_state({"query": "test"})
         result = chat_model_node.execute({})
@@ -505,7 +532,7 @@ class TestUsageStatistics:
 
     def test_usage_stats_included(self, chat_model_node, mock_llm_response, mocker):
         """Test that usage statistics are captured."""
-        mocker.patch('requests.post', return_value=mock_llm_response)
+        mocker.patch("requests.post", return_value=mock_llm_response)
 
         chat_model_node.update_state({"query": "test"})
         result = chat_model_node.execute({})
@@ -522,14 +549,12 @@ class TestUsageStatistics:
         mock_response = Mock()
         mock_response.status_code = 200
         mock_response.json.return_value = {
-            "choices": [
-                {"message": {"role": "assistant", "content": "Response"}}
-            ]
+            "choices": [{"message": {"role": "assistant", "content": "Response"}}]
             # No usage field
         }
         mock_response.raise_for_status.return_value = None
 
-        mocker.patch('requests.post', return_value=mock_response)
+        mocker.patch("requests.post", return_value=mock_response)
 
         chat_model_node.update_state({"query": "test"})
         result = chat_model_node.execute({})
