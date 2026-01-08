@@ -214,6 +214,7 @@ class FileLogger:
             "duration_seconds": None,
             "log_file": log_filename,
             "error_message": None,
+            "outputs": None,
         }
 
         self.current_session["node_logs"].append(node_log_entry)
@@ -269,6 +270,7 @@ class FileLogger:
         node_log_entry["ended_at"] = ended_at.isoformat()
         node_log_entry["duration_seconds"] = duration
         node_log_entry["error_message"] = error
+        node_log_entry["outputs"] = output_data
 
         # Update execution counters
         if success:

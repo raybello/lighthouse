@@ -117,6 +117,17 @@ def test_logging_system():
         print(f"     - Duration: {node_log['duration_seconds']:.2f}s")
         print(f"     - Log file: {node_log['log_file']}")
 
+        # Check if outputs are captured
+        if node_log.get("outputs"):
+            print(f"     - Outputs captured: Yes")
+            # Show a preview of the outputs
+            outputs_str = str(node_log["outputs"])
+            if len(outputs_str) > 100:
+                outputs_str = outputs_str[:100] + "..."
+            print(f"     - Output preview: {outputs_str}")
+        else:
+            print(f"     - Outputs captured: No")
+
     print(f"\n✅ All logging tests passed!")
     print(f"📁 View logs at: {session_dir}")
 
