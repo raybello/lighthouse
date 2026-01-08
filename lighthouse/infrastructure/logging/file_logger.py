@@ -5,11 +5,10 @@ Creates a directory per execution in .logs/ with separate log files
 for each node execution, matching the legacy logging behavior.
 """
 
-import os
 import json
 from datetime import datetime
-from typing import Dict, List, Any, Optional
 from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 
 class FileLogger:

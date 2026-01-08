@@ -4,13 +4,13 @@ Form node for creating dynamic forms with typed fields.
 Pure business logic with NO UI dependencies.
 """
 
-from typing import Dict, Any, List
 import json
 import time
+from typing import Any, Dict, List
 
-from lighthouse.nodes.base.base_node import ExecutionNode
-from lighthouse.domain.models.node import NodeMetadata, NodeType, ExecutionResult
 from lighthouse.domain.models.field_types import FieldDefinition, FieldType
+from lighthouse.domain.models.node import ExecutionResult, NodeMetadata, NodeType
+from lighthouse.nodes.base.base_node import ExecutionNode
 
 
 class FormNode(ExecutionNode):
@@ -31,7 +31,7 @@ class FormNode(ExecutionNode):
         self.form_fields = [
             {"name": "fullName", "type": "string", "value": ""},
             {"name": "age", "type": "number", "value": "0"},
-            {"name": "isActive", "type": "boolean", "value": "true"}
+            {"name": "isActive", "type": "boolean", "value": "true"},
         ]
 
         super().__init__(name)
@@ -52,11 +52,13 @@ class FormNode(ExecutionNode):
                     name="form_fields_json",
                     label="Form Fields (JSON)",
                     field_type=FieldType.STRING,  # Stores JSON array
-                    default_value=json.dumps([
-                        {"name": "fullName", "type": "string", "value": ""},
-                        {"name": "age", "type": "number", "value": "0"},
-                        {"name": "isActive", "type": "boolean", "value": "true"}
-                    ]),
+                    default_value=json.dumps(
+                        [
+                            {"name": "fullName", "type": "string", "value": ""},
+                            {"name": "age", "type": "number", "value": "0"},
+                            {"name": "isActive", "type": "boolean", "value": "true"},
+                        ]
+                    ),
                     required=True,
                     description="JSON array of form fields with name, type, and value",
                 ),
@@ -153,7 +155,7 @@ class FormNode(ExecutionNode):
         """Parse value as number."""
         try:
             str_value = str(value)
-            if '.' in str_value:
+            if "." in str_value:
                 return float(value)
             else:
                 return int(value)
@@ -193,7 +195,7 @@ class FormNode(ExecutionNode):
 
         for i, field in enumerate(self.form_fields):
             if not isinstance(field, dict):
-                errors.append(f"Field {i+1}: Must be an object")
+                errors.append(f"Field {i + 1}: Must be an object")
                 continue
 
             field_name = field.get("name", "")
@@ -201,13 +203,13 @@ class FormNode(ExecutionNode):
 
             # Validate field name
             if not field_name or not field_name.strip():
-                errors.append(f"Field {i+1}: Field name is required")
+                errors.append(f"Field {i + 1}: Field name is required")
             elif not field_name.replace("_", "").isalnum():
                 errors.append(
-                    f"Field {i+1}: Field name '{field_name}' must be alphanumeric (underscores allowed)"
+                    f"Field {i + 1}: Field name '{field_name}' must be alphanumeric (underscores allowed)"
                 )
             elif field_name in field_names:
-                errors.append(f"Field {i+1}: Duplicate field name '{field_name}'")
+                errors.append(f"Field {i + 1}: Duplicate field name '{field_name}'")
             else:
                 field_names.add(field_name)
 
@@ -228,9 +230,13 @@ class FormNode(ExecutionNode):
                         errors.append(f"Field '{field_name}': Value must be a number or expression")
                 elif field_type == "boolean":
                     if str(field_value).lower() not in ["true", "false", "1", "0", "yes", "no"]:
-                        errors.append(f"Field '{field_name}': Value must be true/false or expression")
+                        errors.append(
+                            f"Field '{field_name}': Value must be true/false or expression"
+                        )
                 elif field_type == "object":
-                    if not str(field_value).startswith("{") and not str(field_value).startswith("["):
+                    if not str(field_value).startswith("{") and not str(field_value).startswith(
+                        "["
+                    ):
                         errors.append(
                             f"Field '{field_name}': Value must be valid JSON object/array or expression"
                         )

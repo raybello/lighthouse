@@ -5,12 +5,11 @@ This is a pure domain class with ZERO UI dependencies.
 All UI rendering is handled separately by INodeRenderer implementations.
 """
 
-from abc import ABC, abstractmethod
-from typing import Dict, Any, List, Optional
 import uuid
+from abc import ABC, abstractmethod
+from typing import Any, Dict, List, Optional
 
-from lighthouse.domain.models.node import Node, NodeMetadata, ExecutionResult
-from lighthouse.domain.protocols.node_protocol import INode
+from lighthouse.domain.models.node import ExecutionResult, Node, NodeMetadata
 
 
 class BaseNode(ABC):

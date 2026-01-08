@@ -1,8 +1,9 @@
 """Protocol for workflow execution engines."""
 
 from typing import Protocol
-from lighthouse.domain.models.workflow import Workflow
+
 from lighthouse.domain.models.execution import ExecutionSession
+from lighthouse.domain.models.workflow import Workflow
 
 
 class IExecutor(Protocol):
@@ -14,11 +15,7 @@ class IExecutor(Protocol):
     of node execution, context management, and error handling.
     """
 
-    def execute_workflow(
-        self,
-        workflow: Workflow,
-        triggered_by: str
-    ) -> ExecutionSession:
+    def execute_workflow(self, workflow: Workflow, triggered_by: str) -> ExecutionSession:
         """
         Execute a workflow from a specific trigger node.
 

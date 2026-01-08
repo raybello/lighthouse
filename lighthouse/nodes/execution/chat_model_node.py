@@ -4,12 +4,12 @@ ChatModel node for interfacing with chat/language models.
 Pure business logic with NO UI dependencies.
 """
 
-from typing import Dict, Any
 import time
+from typing import Any, Dict
 
-from lighthouse.nodes.base.base_node import ExecutionNode
-from lighthouse.domain.models.node import NodeMetadata, NodeType, ExecutionResult
 from lighthouse.domain.models.field_types import FieldDefinition, FieldType
+from lighthouse.domain.models.node import ExecutionResult, NodeMetadata, NodeType
+from lighthouse.nodes.base.base_node import ExecutionNode
 
 
 class ChatModelNode(ExecutionNode):

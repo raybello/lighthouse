@@ -4,12 +4,12 @@ Input node for providing static data to workflows.
 Pure business logic with NO UI dependencies.
 """
 
-from typing import Dict, Any, List
 import json
+from typing import Any, Dict, List
 
-from lighthouse.nodes.base.base_node import TriggerNode
-from lighthouse.domain.models.node import NodeMetadata, NodeType, ExecutionResult
 from lighthouse.domain.models.field_types import FieldDefinition, FieldType
+from lighthouse.domain.models.node import ExecutionResult, NodeMetadata, NodeType
+from lighthouse.nodes.base.base_node import TriggerNode
 
 
 class InputNode(TriggerNode):
@@ -29,10 +29,7 @@ class InputNode(TriggerNode):
 
         # Initialize with default properties if not provided
         if not self.state.get("properties"):
-            default_properties = [
-                {"name": "name", "value": "John"},
-                {"name": "age", "value": "30"}
-            ]
+            default_properties = [{"name": "name", "value": "John"}, {"name": "age", "value": "30"}]
             self.state["properties"] = json.dumps(default_properties)
 
     @property
@@ -48,16 +45,15 @@ class InputNode(TriggerNode):
                     name="properties",
                     label="Properties",
                     field_type=FieldType.STRING,  # JSON string
-                    default_value=json.dumps([
-                        {"name": "name", "value": "John"},
-                        {"name": "age", "value": "30"}
-                    ]),
+                    default_value=json.dumps(
+                        [{"name": "name", "value": "John"}, {"name": "age", "value": "30"}]
+                    ),
                     required=False,
                     description="JSON array of property definitions",
                 ),
             ],
             has_inputs=False,  # Triggers have no inputs
-            has_config=True,   # Has custom configuration
+            has_config=True,  # Has custom configuration
             category="Triggers",
         )
 
@@ -74,6 +70,7 @@ class InputNode(TriggerNode):
             ExecutionResult with property data
         """
         import time
+
         start_time = time.time()
 
         try:
@@ -174,7 +171,7 @@ class InputNode(TriggerNode):
         if value_type == "number":
             if isinstance(value, (int, float)):
                 return value
-            return float(value) if '.' in str(value) else int(value)
+            return float(value) if "." in str(value) else int(value)
 
         elif value_type == "boolean":
             if isinstance(value, bool):
@@ -205,11 +202,7 @@ class InputNode(TriggerNode):
             value_type: Property type (string, number, boolean, object)
         """
         properties = self._parse_properties(self.get_state_value("properties", "[]"))
-        properties.append({
-            "name": name,
-            "value": value,
-            "type": value_type
-        })
+        properties.append({"name": name, "value": value, "type": value_type})
         self.set_state_value("properties", json.dumps(properties))
 
     def remove_property(self, name: str) -> None:
@@ -264,7 +257,9 @@ class InputNode(TriggerNode):
                     errors.append(f"Property {i} is missing a name")
 
                 if "value" not in prop:
-                    errors.append(f"Property {i} ('{prop.get('name', 'unnamed')}') is missing a value")
+                    errors.append(
+                        f"Property {i} ('{prop.get('name', 'unnamed')}') is missing a value"
+                    )
 
         except json.JSONDecodeError:
             errors.append("Properties must be valid JSON")

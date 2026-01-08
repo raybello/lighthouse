@@ -1,14 +1,15 @@
 """Node domain models."""
 
 from dataclasses import dataclass, field
-from typing import Dict, Any, Optional
 from enum import Enum
+from typing import Any, Dict, Optional
 
 from lighthouse.domain.models.field_types import FieldDefinition
 
 
 class NodeType(Enum):
     """Node type categorization."""
+
     TRIGGER = "trigger"
     EXECUTION = "execution"
 
@@ -21,6 +22,7 @@ class NodeMetadata:
     Provides information about the node's capabilities, configuration,
     and behavior without coupling to any UI framework.
     """
+
     node_type: NodeType
     name: str
     description: str
@@ -40,6 +42,7 @@ class ExecutionResult:
     Encapsulates the output of a node's execute() method,
     including success/failure status, output data, and errors.
     """
+
     success: bool
     data: Dict[str, Any]
     error: Optional[str] = None
@@ -47,12 +50,12 @@ class ExecutionResult:
     logs: list[str] = field(default_factory=list)
 
     @classmethod
-    def success_result(cls, data: Dict[str, Any], duration: float = 0.0) -> 'ExecutionResult':
+    def success_result(cls, data: Dict[str, Any], duration: float = 0.0) -> "ExecutionResult":
         """Create a successful execution result."""
         return cls(success=True, data=data, duration_seconds=duration)
 
     @classmethod
-    def error_result(cls, error: str, duration: float = 0.0) -> 'ExecutionResult':
+    def error_result(cls, error: str, duration: float = 0.0) -> "ExecutionResult":
         """Create a failed execution result."""
         return cls(success=False, data={}, error=error, duration_seconds=duration)
 
@@ -73,6 +76,7 @@ class Node:
         metadata: Node type metadata
         status: Execution status (PENDING, RUNNING, COMPLETED, ERROR)
     """
+
     id: str
     name: str
     node_type: str

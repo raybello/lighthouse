@@ -4,9 +4,9 @@ Execution manager for tracking execution sessions and state.
 Pure business logic with NO UI dependencies.
 """
 
-from typing import Dict, Any, Optional
-from datetime import datetime
 import uuid
+from datetime import datetime
+from typing import Any, Dict, Optional
 
 from lighthouse.domain.models.execution import (
     ExecutionSession,

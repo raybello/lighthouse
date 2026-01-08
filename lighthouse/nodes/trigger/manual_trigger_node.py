@@ -4,11 +4,10 @@ Manual Trigger node for initiating workflows.
 Pure business logic with NO UI dependencies.
 """
 
-from typing import Dict, Any
+from typing import Any, Dict
 
+from lighthouse.domain.models.node import ExecutionResult, NodeMetadata, NodeType
 from lighthouse.nodes.base.base_node import TriggerNode
-from lighthouse.domain.models.node import NodeMetadata, NodeType, ExecutionResult
-from lighthouse.domain.models.field_types import FieldDefinition, FieldType
 
 
 class ManualTriggerNode(TriggerNode):
@@ -50,6 +49,7 @@ class ManualTriggerNode(TriggerNode):
             ExecutionResult with empty data
         """
         import time
+
         start_time = time.time()
 
         # Manual trigger just returns success with empty data

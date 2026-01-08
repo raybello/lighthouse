@@ -1,6 +1,6 @@
 """Protocol for logging services."""
 
-from typing import Protocol, Dict, Any, Optional
+from typing import Any, Dict, Optional, Protocol
 
 
 class ILogger(Protocol):

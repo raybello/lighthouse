@@ -4,16 +4,17 @@ Calculator node for arithmetic operations.
 Pure business logic with NO UI dependencies.
 """
 
-from typing import Dict, Any
 from enum import Enum
+from typing import Any, Dict
 
-from lighthouse.nodes.base.base_node import ExecutionNode
-from lighthouse.domain.models.node import NodeMetadata, NodeType, ExecutionResult
 from lighthouse.domain.models.field_types import FieldDefinition, FieldType
+from lighthouse.domain.models.node import ExecutionResult, NodeMetadata, NodeType
+from lighthouse.nodes.base.base_node import ExecutionNode
 
 
 class OperationType(Enum):
     """Supported arithmetic operations."""
+
     ADD = "+"
     SUBTRACT = "-"
     MULTIPLY = "*"
@@ -88,6 +89,7 @@ class CalculatorNode(ExecutionNode):
             ExecutionResult with calculation result
         """
         import time
+
         start_time = time.time()
 
         try:

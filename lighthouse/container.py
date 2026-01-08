@@ -7,15 +7,15 @@ Provides centralized service instantiation and dependency management.
 from dataclasses import dataclass
 from typing import Optional
 
+from lighthouse.application.services.execution_manager import ExecutionManager
+from lighthouse.application.services.node_factory import NodeFactory
+from lighthouse.application.services.workflow_orchestrator import WorkflowOrchestrator
+from lighthouse.domain.protocols.logger_protocol import ILogger
+from lighthouse.domain.services.context_builder import ContextBuilder
 from lighthouse.domain.services.expression_service import ExpressionService
 from lighthouse.domain.services.topology_service import TopologyService
-from lighthouse.domain.services.context_builder import ContextBuilder
-from lighthouse.application.services.node_factory import NodeFactory
-from lighthouse.application.services.execution_manager import ExecutionManager
-from lighthouse.application.services.workflow_orchestrator import WorkflowOrchestrator
-from lighthouse.nodes.registry import NodeRegistry, get_registry
-from lighthouse.domain.protocols.logger_protocol import ILogger
 from lighthouse.infrastructure.logging.file_logger import FileLogger
+from lighthouse.nodes.registry import NodeRegistry, get_registry
 
 
 @dataclass

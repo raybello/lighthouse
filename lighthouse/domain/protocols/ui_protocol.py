@@ -1,6 +1,7 @@
 """Protocol for UI rendering abstractions."""
 
-from typing import Protocol, Callable, Dict, Any
+from typing import Any, Callable, Dict, Protocol
+
 from lighthouse.domain.models.node import Node
 
 
@@ -41,12 +42,7 @@ class INodeRenderer(Protocol):
         """
         ...
 
-    def update_node_status(
-        self,
-        node_id: str,
-        status: str,
-        color: tuple[int, int, int]
-    ) -> None:
+    def update_node_status(self, node_id: str, status: str, color: tuple[int, int, int]) -> None:
         """
         Update node visual status.
 
@@ -60,12 +56,7 @@ class INodeRenderer(Protocol):
         """
         ...
 
-    def render_connection(
-        self,
-        from_node: str,
-        to_node: str,
-        connection_id: str
-    ) -> None:
+    def render_connection(self, from_node: str, to_node: str, connection_id: str) -> None:
         """
         Render a connection between nodes.
 
@@ -76,11 +67,7 @@ class INodeRenderer(Protocol):
         """
         ...
 
-    def show_inspector(
-        self,
-        node: Node,
-        on_save: Callable[[Dict[str, Any]], None]
-    ) -> None:
+    def show_inspector(self, node: Node, on_save: Callable[[Dict[str, Any]], None]) -> None:
         """
         Show inspector window for node configuration.
 

@@ -5,7 +5,8 @@ Manages the construction of context dictionaries that are used
 for expression resolution during workflow execution.
 """
 
-from typing import Dict, Any, List
+from typing import Any, Dict, List
+
 from lighthouse.domain.models.execution import ExecutionSession
 
 
@@ -49,9 +50,7 @@ class ContextBuilder:
 
         return context
 
-    def build_context_from_outputs(
-        self, node_outputs: Dict[str, Dict[str, Any]]
-    ) -> Dict[str, Any]:
+    def build_context_from_outputs(self, node_outputs: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
         """
         Build context from a simple dictionary of node outputs.
 
@@ -90,9 +89,7 @@ class ContextBuilder:
         new_context[node_name] = output
         return new_context
 
-    def merge_contexts(
-        self, *contexts: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def merge_contexts(self, *contexts: Dict[str, Any]) -> Dict[str, Any]:
         """
         Merge multiple context dictionaries.
 
@@ -127,15 +124,9 @@ class ContextBuilder:
         Returns:
             Filtered context dictionary
         """
-        return {
-            name: output
-            for name, output in context.items()
-            if name in node_names
-        }
+        return {name: output for name, output in context.items() if name in node_names}
 
-    def validate_context(
-        self, context: Dict[str, Any]
-    ) -> tuple[bool, List[str]]:
+    def validate_context(self, context: Dict[str, Any]) -> tuple[bool, List[str]]:
         """
         Validate a context dictionary structure.
 
@@ -159,9 +150,7 @@ class ContextBuilder:
                 errors.append(f"Node name must be string, got {type(node_name)}")
 
             if not isinstance(output, dict):
-                errors.append(
-                    f"Output for '{node_name}' must be dict, got {type(output)}"
-                )
+                errors.append(f"Output for '{node_name}' must be dict, got {type(output)}")
 
         is_valid = len(errors) == 0
         return is_valid, errors

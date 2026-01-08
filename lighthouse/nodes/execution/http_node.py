@@ -4,18 +4,19 @@ HTTP Request node for making HTTP/REST API calls.
 Pure business logic with NO UI dependencies.
 """
 
-from typing import Dict, Any, Optional
-from enum import Enum
 import json
 import time
+from enum import Enum
+from typing import Any, Dict, Optional
 
-from lighthouse.nodes.base.base_node import ExecutionNode
-from lighthouse.domain.models.node import NodeMetadata, NodeType, ExecutionResult
 from lighthouse.domain.models.field_types import FieldDefinition, FieldType
+from lighthouse.domain.models.node import ExecutionResult, NodeMetadata, NodeType
+from lighthouse.nodes.base.base_node import ExecutionNode
 
 
 class HTTPRequestType(Enum):
     """Supported HTTP request methods."""
+
     GET = "GET"
     POST = "POST"
     PUT = "PUT"

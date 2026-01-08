@@ -1,7 +1,8 @@
 """Protocol defining the contract for workflow nodes."""
 
-from typing import Protocol, Dict, Any
-from lighthouse.domain.models.node import NodeMetadata, ExecutionResult
+from typing import Any, Dict, Protocol
+
+from lighthouse.domain.models.node import ExecutionResult, NodeMetadata
 
 
 class INode(Protocol):

@@ -5,9 +5,10 @@ Provides topological sorting and cycle detection using Kahn's algorithm.
 All methods are pure functions with no side effects.
 """
 
-from typing import List, Dict, Set
-from lighthouse.domain.models.workflow import Workflow
+from typing import List
+
 from lighthouse.domain.exceptions import CycleDetectedError
+from lighthouse.domain.models.workflow import Workflow
 
 
 class TopologyService:
@@ -299,6 +300,9 @@ class TopologyService:
         # Would adding this connection create a cycle?
         # It creates a cycle if there's already a path from to_node to from_node
         if self.is_reachable(workflow, to_node, from_node):
-            return False, f"Connection would create a cycle: {to_node} already has a path to {from_node}"
+            return (
+                False,
+                f"Connection would create a cycle: {to_node} already has a path to {from_node}",
+            )
 
         return True, ""

@@ -1,13 +1,14 @@
 """Execution session domain models."""
 
 from dataclasses import dataclass, field
-from typing import Dict, Any, List, Optional
 from datetime import datetime
 from enum import Enum
+from typing import Any, Dict, List, Optional
 
 
 class ExecutionStatus(Enum):
     """Execution session status."""
+
     PENDING = "PENDING"
     RUNNING = "RUNNING"
     COMPLETED = "COMPLETED"
@@ -22,6 +23,7 @@ class NodeExecutionRecord:
 
     Tracks inputs, outputs, duration, and status for a node execution.
     """
+
     node_id: str
     node_name: str
     status: ExecutionStatus
@@ -69,6 +71,7 @@ class ExecutionSession:
         node_records: Record of each node's execution
         context: Shared context for expression resolution
     """
+
     id: str
     workflow_id: str
     workflow_name: str
@@ -165,15 +168,13 @@ class ExecutionSession:
     def get_completed_nodes_count(self) -> int:
         """Get count of successfully completed nodes."""
         return sum(
-            1 for record in self.node_records.values()
-            if record.status == ExecutionStatus.COMPLETED
+            1 for record in self.node_records.values() if record.status == ExecutionStatus.COMPLETED
         )
 
     def get_failed_nodes_count(self) -> int:
         """Get count of failed nodes."""
         return sum(
-            1 for record in self.node_records.values()
-            if record.status == ExecutionStatus.FAILED
+            1 for record in self.node_records.values() if record.status == ExecutionStatus.FAILED
         )
 
     def to_dict(self) -> Dict[str, Any]:
@@ -193,10 +194,7 @@ class ExecutionSession:
             "end_time": self.end_time.isoformat() if self.end_time else None,
             "duration_seconds": self.get_duration_seconds(),
             "execution_order": self.execution_order,
-            "node_records": {
-                nid: record.to_dict()
-                for nid, record in self.node_records.items()
-            },
+            "node_records": {nid: record.to_dict() for nid, record in self.node_records.items()},
             "completed_nodes": self.get_completed_nodes_count(),
             "failed_nodes": self.get_failed_nodes_count(),
         }

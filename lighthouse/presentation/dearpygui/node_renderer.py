@@ -520,7 +520,7 @@ class DearPyGuiNodeRenderer(INodeRenderer):
                 # Update field values from current state before showing
                 self._update_inspector_fields(node)
         else:
-            console.print(f"[red]  Node not found in self._nodes![/red]")
+            console.print("[red]  Node not found in self._nodes![/red]")
 
         if dpg.does_item_exist(node_id):
             node_pos = dpg.get_item_pos(node_id)
@@ -825,7 +825,7 @@ class DearPyGuiNodeRenderer(INodeRenderer):
             # Show validation errors
             error_text = "Validation Errors:\n" + "\n".join(errors)
             dpg.set_value(f"{node_id}_validation_errors", error_text)
-            console.print(f"[red]Input validation failed:[/red]")
+            console.print("[red]Input validation failed:[/red]")
             for error in errors:
                 console.print(f"  [red]- {error}[/red]")
             return
@@ -1046,7 +1046,7 @@ class DearPyGuiNodeRenderer(INodeRenderer):
             # Show validation errors
             error_text = "Validation Errors:\n" + "\n".join(errors)
             dpg.set_value(f"{node_id}_validation_errors", error_text)
-            console.print(f"[red]Form validation failed:[/red]")
+            console.print("[red]Form validation failed:[/red]")
             for error in errors:
                 console.print(f"  [red]- {error}[/red]")
             return

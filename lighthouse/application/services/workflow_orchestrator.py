@@ -4,13 +4,14 @@ Workflow orchestrator for coordinating node execution.
 Pure business logic with NO UI dependencies.
 """
 
-from typing import Dict, Any, List, Optional, Callable
-from threading import Thread, Event
-from lighthouse.nodes.base.base_node import BaseNode
-from lighthouse.domain.services.topology_service import TopologyService
-from lighthouse.domain.services.expression_service import ExpressionService
+from threading import Event, Thread
+from typing import Any, Callable, Dict, List, Optional
+
 from lighthouse.application.services.execution_manager import ExecutionManager
 from lighthouse.domain.models.workflow import Workflow
+from lighthouse.domain.services.expression_service import ExpressionService
+from lighthouse.domain.services.topology_service import TopologyService
+from lighthouse.nodes.base.base_node import BaseNode
 
 
 class WorkflowOrchestrator:

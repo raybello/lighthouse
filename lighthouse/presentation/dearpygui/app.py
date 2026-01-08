@@ -8,7 +8,6 @@ with dependency injection and clean separation of concerns.
 import os
 import subprocess
 import sys
-import time
 from typing import Any, Dict, List, Optional
 
 import dearpygui.dearpygui as dpg
@@ -507,15 +506,15 @@ class LighthouseUI:
             f"Execution ID: {exec_id}",
             f"Status: {exec_data.get('status', 'UNKNOWN')}",
             f"Triggered by: {exec_data.get('triggered_by', 'Unknown')}",
-            f"",
+            "",
             f"Node Count: {exec_data.get('node_count', 0)}",
             f"Nodes Executed: {exec_data.get('nodes_executed', 0)}",
             f"Nodes Failed: {exec_data.get('nodes_failed', 0)}",
-            f"",
+            "",
             f"Duration: {exec_data.get('duration_seconds', 0):.2f}s"
             if exec_data.get("duration_seconds")
             else "Duration: Running...",
-            f"",
+            "",
             "=" * 50,
             "Node Execution Details:",
             "=" * 50,
@@ -524,7 +523,7 @@ class LighthouseUI:
         for node_log in exec_data.get("node_logs", []):
             status = node_log.get("status", "UNKNOWN")
             duration = node_log.get("duration_seconds", 0)
-            lines.append(f"")
+            lines.append("")
             lines.append(
                 f"Node: {node_log.get('node_name', 'Unknown')} ({node_log.get('node_id', '')[:8]})"
             )
@@ -565,13 +564,13 @@ class LighthouseUI:
         # Build error content
         lines = [
             f"Execution Errors for: {exec_id}",
-            f"",
+            "",
             "=" * 50,
         ]
 
         for node_log in exec_data.get("node_logs", []):
             if node_log.get("error_message"):
-                lines.append(f"")
+                lines.append("")
                 lines.append(
                     f"Node: {node_log.get('node_name', 'Unknown')} ({node_log.get('node_id', '')[:8]})"
                 )
@@ -616,8 +615,8 @@ class LighthouseUI:
         import json
 
         lines = [
-            f"Node Execution Details",
-            f"",
+            "Node Execution Details",
+            "",
             f"Execution ID: {exec_id}",
             f"Node ID: {node_id}",
             f"Node Name: {node_log.get('node_name', 'Unknown')}",
@@ -625,7 +624,7 @@ class LighthouseUI:
             f"Duration: {node_log.get('duration_seconds', 0):.2f}s"
             if node_log.get("duration_seconds")
             else "Duration: -",
-            f"",
+            "",
         ]
 
         if node_log.get("error_message"):

@@ -14,7 +14,7 @@ No UI, no logging, no file I/O - just computation.
 """
 
 import re
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from lighthouse.domain.exceptions import ExpressionError
 
@@ -35,10 +35,7 @@ class DictWrapper:
                     setattr(
                         self,
                         key,
-                        [
-                            DictWrapper(item) if isinstance(item, dict) else item
-                            for item in value
-                        ],
+                        [DictWrapper(item) if isinstance(item, dict) else item for item in value],
                     )
                 else:
                     setattr(self, key, value)
@@ -102,7 +99,7 @@ class ExpressionService:
         """
         if not isinstance(text, str):
             return False
-        return bool(re.search(r'\{\{.*?\}\}', text))
+        return bool(re.search(r"\{\{.*?\}\}", text))
 
     def extract_expressions(self, text: str) -> list:
         """
@@ -116,12 +113,10 @@ class ExpressionService:
         """
         if not isinstance(text, str):
             return []
-        matches = re.findall(r'\{\{(.*?)\}\}', text)
+        matches = re.findall(r"\{\{(.*?)\}\}", text)
         return matches
 
-    def evaluate_expression(
-        self, expression: str, context: Dict[str, Any]
-    ) -> Any:
+    def evaluate_expression(self, expression: str, context: Dict[str, Any]) -> Any:
         """
         Evaluate a single expression using the provided context.
 
@@ -144,11 +139,9 @@ class ExpressionService:
                 node_name = match.group(2)
                 if node_name in context:
                     # Return a placeholder that we'll replace with actual data
-                    return f'__node__{node_name}__'
+                    return f"__node__{node_name}__"
                 else:
-                    raise ExpressionError(
-                        f"Node '{node_name}' not found in context"
-                    )
+                    raise ExpressionError(f"Node '{node_name}' not found in context")
 
             # Replace node references with placeholders
             modified_expr = re.sub(node_pattern, replace_node_ref, expression)
@@ -156,7 +149,7 @@ class ExpressionService:
             # Build evaluation context with node data
             temp_context = {}
             for node_name, node_data in context.items():
-                placeholder = f'__node__{node_name}__'
+                placeholder = f"__node__{node_name}__"
                 if placeholder in modified_expr:
                     # Wrap the node data to allow attribute access
                     temp_context[placeholder] = DictWrapper(node_data)
@@ -165,9 +158,7 @@ class ExpressionService:
             # Use a simple variable name approach
             eval_context = {}
             for placeholder, data in temp_context.items():
-                var_name = placeholder.replace('__node__', 'node_').replace(
-                    '__', ''
-                )
+                var_name = placeholder.replace("__node__", "node_").replace("__", "")
                 modified_expr = modified_expr.replace(placeholder, var_name)
                 eval_context[var_name] = data
 
@@ -176,9 +167,7 @@ class ExpressionService:
             return result
 
         except Exception as e:
-            raise ExpressionError(
-                f"Failed to evaluate expression '{expression}': {str(e)}"
-            )
+            raise ExpressionError(f"Failed to evaluate expression '{expression}': {str(e)}")
 
     def resolve(self, value: Any, context: Dict[str, Any]) -> Any:
         """
@@ -205,7 +194,7 @@ class ExpressionService:
             return value
 
         # Check if the entire string is a single expression
-        single_expr_match = re.match(r'^\{\{(.+)\}\}$', value.strip())
+        single_expr_match = re.match(r"^\{\{(.+)\}\}$", value.strip())
         if single_expr_match:
             # Entire string is one expression - return evaluated result
             expression = single_expr_match.group(1).strip()
@@ -232,9 +221,7 @@ class ExpressionService:
 
         return result
 
-    def resolve_dict(
-        self, data: Dict[str, Any], context: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def resolve_dict(self, data: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]:
         """
         Recursively resolve all expressions in a dictionary.
 

@@ -4,18 +4,19 @@ Node registry for dynamic node discovery and instantiation.
 Provides a centralized registry for all available node types.
 """
 
-from typing import Dict, Type, List
-from lighthouse.nodes.base.base_node import BaseNode, TriggerNode, ExecutionNode
+from typing import Dict, List, Type
+
+from lighthouse.nodes.base.base_node import BaseNode, ExecutionNode, TriggerNode
+from lighthouse.nodes.execution.calculator_node import CalculatorNode
+from lighthouse.nodes.execution.chat_model_node import ChatModelNode
+from lighthouse.nodes.execution.code_node import CodeNode
+from lighthouse.nodes.execution.command_node import ExecuteCommandNode
+from lighthouse.nodes.execution.form_node import FormNode
+from lighthouse.nodes.execution.http_node import HTTPRequestNode
+from lighthouse.nodes.trigger.input_node import InputNode
 
 # Import all node implementations
 from lighthouse.nodes.trigger.manual_trigger_node import ManualTriggerNode
-from lighthouse.nodes.trigger.input_node import InputNode
-from lighthouse.nodes.execution.calculator_node import CalculatorNode
-from lighthouse.nodes.execution.http_node import HTTPRequestNode
-from lighthouse.nodes.execution.command_node import ExecuteCommandNode
-from lighthouse.nodes.execution.code_node import CodeNode
-from lighthouse.nodes.execution.chat_model_node import ChatModelNode
-from lighthouse.nodes.execution.form_node import FormNode
 
 
 class NodeRegistry:
@@ -57,7 +58,7 @@ class NodeRegistry:
             raise ValueError(f"Node type '{node_type}' is already registered")
 
         if not issubclass(node_class, BaseNode):
-            raise TypeError(f"Node class must inherit from BaseNode")
+            raise TypeError("Node class must inherit from BaseNode")
 
         self._nodes[node_type] = node_class
 

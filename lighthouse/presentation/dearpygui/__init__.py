@@ -1,8 +1,8 @@
 """DearPyGui presentation layer components."""
 
 from lighthouse.presentation.dearpygui.app import LighthouseUI, run_app
-from lighthouse.presentation.dearpygui.theme_manager import ThemeManager
 from lighthouse.presentation.dearpygui.node_renderer import DearPyGuiNodeRenderer
+from lighthouse.presentation.dearpygui.theme_manager import ThemeManager
 
 __all__ = [
     "LighthouseUI",

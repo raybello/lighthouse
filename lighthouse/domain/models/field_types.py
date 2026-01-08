@@ -1,12 +1,13 @@
 """Field type definitions for node configuration."""
 
 from dataclasses import dataclass
-from typing import Any, Callable, Optional
 from enum import Enum
+from typing import Any, Callable, Optional
 
 
 class FieldType(Enum):
     """Supported field types for node configuration."""
+
     STRING = "string"
     LONG_STRING = "long_string"
     NUMBER = "number"
@@ -30,6 +31,7 @@ class FieldDefinition:
         enum_options: For ENUM type, list of valid options
         description: Optional field description
     """
+
     name: str
     label: str
     field_type: FieldType

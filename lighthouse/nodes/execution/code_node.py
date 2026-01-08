@@ -4,45 +4,44 @@ Code node for executing sandboxed Python code.
 Pure business logic with NO UI dependencies.
 """
 
-from typing import Dict, Any
 import ast
 import threading
 import time
+from typing import Any, Dict
 
-from lighthouse.nodes.base.base_node import ExecutionNode
-from lighthouse.domain.models.node import NodeMetadata, NodeType, ExecutionResult
 from lighthouse.domain.models.field_types import FieldDefinition, FieldType
-
+from lighthouse.domain.models.node import ExecutionResult, NodeMetadata, NodeType
+from lighthouse.nodes.base.base_node import ExecutionNode
 
 # Safe builtins whitelist for code execution
 SAFE_BUILTINS = {
-    'abs': abs,
-    'all': all,
-    'any': any,
-    'bool': bool,
-    'dict': dict,
-    'enumerate': enumerate,
-    'filter': filter,
-    'float': float,
-    'int': int,
-    'len': len,
-    'list': list,
-    'map': map,
-    'max': max,
-    'min': min,
-    'range': range,
-    'reversed': reversed,
-    'round': round,
-    'set': set,
-    'sorted': sorted,
-    'str': str,
-    'sum': sum,
-    'tuple': tuple,
-    'zip': zip,
-    'True': True,
-    'False': False,
-    'None': None,
-    '__build_class__': __builtins__['__build_class__'],  # Required for class definitions
+    "abs": abs,
+    "all": all,
+    "any": any,
+    "bool": bool,
+    "dict": dict,
+    "enumerate": enumerate,
+    "filter": filter,
+    "float": float,
+    "int": int,
+    "len": len,
+    "list": list,
+    "map": map,
+    "max": max,
+    "min": min,
+    "range": range,
+    "reversed": reversed,
+    "round": round,
+    "set": set,
+    "sorted": sorted,
+    "str": str,
+    "sum": sum,
+    "tuple": tuple,
+    "zip": zip,
+    "True": True,
+    "False": False,
+    "None": None,
+    "__build_class__": __builtins__["__build_class__"],  # Required for class definitions
 }
 
 
@@ -132,7 +131,7 @@ class CodeNode(ExecutionNode):
 
             # Step 2: Compile the code
             try:
-                compiled = compile(code, '<code>', 'exec')
+                compiled = compile(code, "<code>", "exec")
             except SyntaxError as e:
                 return ExecutionResult.error_result(
                     error=f"Syntax error: {str(e)}",
@@ -140,9 +139,7 @@ class CodeNode(ExecutionNode):
                 )
 
             # Step 3: Execute with timeout
-            result_container = self._execute_with_timeout(
-                compiled, context, timeout_seconds
-            )
+            result_container = self._execute_with_timeout(compiled, context, timeout_seconds)
 
             duration = time.time() - start_time
 
@@ -195,14 +192,26 @@ class CodeNode(ExecutionNode):
 
             # Reject dangerous function calls
             if isinstance(node, ast.Name):
-                if node.id in ['eval', 'exec', 'compile', 'open', '__import__',
-                               'globals', 'locals', 'vars', 'dir',
-                               'getattr', 'setattr', 'delattr', 'hasattr']:
+                if node.id in [
+                    "eval",
+                    "exec",
+                    "compile",
+                    "open",
+                    "__import__",
+                    "globals",
+                    "locals",
+                    "vars",
+                    "dir",
+                    "getattr",
+                    "setattr",
+                    "delattr",
+                    "hasattr",
+                ]:
                     return f"Function '{node.id}' is not allowed"
 
             # Reject private/dunder attribute access
             if isinstance(node, ast.Attribute):
-                if node.attr.startswith('_'):
+                if node.attr.startswith("_"):
                     return f"Access to private attribute '{node.attr}' is not allowed"
 
         return ""  # Code is safe
@@ -230,15 +239,15 @@ class CodeNode(ExecutionNode):
 
         # Prepare execution namespace
         exec_namespace = {
-            '__builtins__': SAFE_BUILTINS.copy(),
-            'context': context,  # Make context available to code
-            '__name__': '__main__',  # Required for class definitions
+            "__builtins__": SAFE_BUILTINS.copy(),
+            "context": context,  # Make context available to code
+            "__name__": "__main__",  # Required for class definitions
         }
 
         def run_code():
             try:
                 exec(compiled_code, exec_namespace)
-                result_container["result"] = exec_namespace.get('result', None)
+                result_container["result"] = exec_namespace.get("result", None)
                 result_container["completed"] = True
             except Exception as e:
                 result_container["error"] = str(e)

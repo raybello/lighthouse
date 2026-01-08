@@ -5,6 +5,7 @@ Provides centralized node creation with dependency injection support.
 """
 
 from typing import Optional
+
 from lighthouse.nodes.base.base_node import BaseNode
 from lighthouse.nodes.registry import NodeRegistry, get_registry
 

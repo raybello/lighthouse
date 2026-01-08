@@ -4,8 +4,6 @@ Theme manager for DearPyGui.
 Handles visual theming for the Lighthouse application.
 """
 
-from typing import Tuple
-
 
 class ThemeManager:
     """

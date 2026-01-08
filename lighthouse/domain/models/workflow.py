@@ -3,8 +3,8 @@
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
-from lighthouse.domain.models.node import Node
 from lighthouse.domain.exceptions import InvalidConnectionError, NodeNotFoundError
+from lighthouse.domain.models.node import Node
 
 
 @dataclass
@@ -15,6 +15,7 @@ class Connection:
     Represents a directed edge in the workflow graph,
     indicating data/control flow from one node to another.
     """
+
     from_node_id: str
     to_node_id: str
 
@@ -22,10 +23,7 @@ class Connection:
         """Check equality based on node IDs."""
         if not isinstance(other, Connection):
             return False
-        return (
-            self.from_node_id == other.from_node_id
-            and self.to_node_id == other.to_node_id
-        )
+        return self.from_node_id == other.from_node_id and self.to_node_id == other.to_node_id
 
     def __hash__(self):
         """Make connection hashable for use in sets."""
@@ -48,6 +46,7 @@ class Workflow:
         connections: List of connections between nodes
         description: Optional workflow description
     """
+
     id: str
     name: str
     nodes: Dict[str, Node] = field(default_factory=dict)
@@ -86,7 +85,8 @@ class Workflow:
 
         # Remove all connections involving this node
         self.connections = [
-            conn for conn in self.connections
+            conn
+            for conn in self.connections
             if conn.from_node_id != node_id and conn.to_node_id != node_id
         ]
 
@@ -111,9 +111,7 @@ class Workflow:
         # Check for duplicate connection
         connection = Connection(from_node, to_node)
         if connection in self.connections:
-            raise InvalidConnectionError(
-                f"Connection from {from_node} to {to_node} already exists"
-            )
+            raise InvalidConnectionError(f"Connection from {from_node} to {to_node} already exists")
 
         self.connections.append(connection)
 
@@ -156,11 +154,7 @@ class Workflow:
         Returns:
             List of source node IDs
         """
-        return [
-            conn.from_node_id
-            for conn in self.connections
-            if conn.to_node_id == node_id
-        ]
+        return [conn.from_node_id for conn in self.connections if conn.to_node_id == node_id]
 
     def get_outgoing_connections(self, node_id: str) -> List[str]:
         """
@@ -172,11 +166,7 @@ class Workflow:
         Returns:
             List of target node IDs
         """
-        return [
-            conn.to_node_id
-            for conn in self.connections
-            if conn.from_node_id == node_id
-        ]
+        return [conn.to_node_id for conn in self.connections if conn.from_node_id == node_id]
 
     def get_topology(self) -> Dict[str, List[str]]:
         """
@@ -208,7 +198,6 @@ class Workflow:
             "description": self.description,
             "nodes": {nid: node.to_dict() for nid, node in self.nodes.items()},
             "connections": [
-                {"from": conn.from_node_id, "to": conn.to_node_id}
-                for conn in self.connections
+                {"from": conn.from_node_id, "to": conn.to_node_id} for conn in self.connections
             ],
         }
