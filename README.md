@@ -1,82 +1,198 @@
 # Lighthouse
 
-A visual node-based workflow editor built with DearPyGui. Create and connect nodes for workflow automation with dynamic expression evaluation.
+A visual node-based workflow automation engine built with DearPyGui. Lighthouse provides a directed acyclic graph (DAG) execution model with dynamic expression evaluation, enabling users to compose complex data pipelines through an intuitive drag-and-drop interface.
 
-## Features
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Tests](https://img.shields.io/badge/tests-426%20passed-brightgreen.svg)]()
+[![Coverage](https://img.shields.io/badge/coverage-87%25-brightgreen.svg)]()
 
-- **Visual Node Editor** - Drag-and-drop interface with node connections and minimap
-- **Dynamic Expressions** - Reference upstream node outputs using `{{$node["NodeName"].data.property}}` syntax
-- **Multiple Node Types**:
-  - **Trigger Nodes**: Manual Trigger, Input
-  - **Execution Nodes**: HTTP Request, Execute Command, Calculator, Form, Code, Chat Model
-- **Expression Engine** - Supports arithmetic, comparisons, and nested property access
-- **Execution Logging** - Track workflow runs with detailed session logs
-- **Clean Architecture** - Layered design with dependency injection for testability
+## Overview
 
-## Installation
+Lighthouse implements a modular workflow execution system where nodes represent discrete operations connected via typed ports. The execution engine performs topological sorting to determine evaluation order, resolving inter-node dependencies through a context-aware expression system.
 
-### Requirements
+### Core Capabilities
+
+- **DAG-Based Execution** - Topologically sorted node evaluation with dependency resolution
+- **Expression Engine** - Runtime interpolation using `{{$node["name"].data.property}}` syntax with support for arithmetic, comparisons, and nested property access
+- **Extensible Node System** - Protocol-based node architecture enabling custom node implementations
+- **Session Management** - Comprehensive execution tracking with per-node timing and result capture
+- **Dependency Injection** - Service container architecture for testability and modularity
+
+### Node Types
+
+| Category | Nodes | Description |
+|----------|-------|-------------|
+| **Trigger** | `ManualTrigger`, `Input` | Workflow entry points; no upstream dependencies |
+| **Execution** | `HTTPRequest`, `ExecuteCommand`, `Calculator`, `Form`, `Code`, `ChatModel` | Data transformation and external integrations |
+
+## Requirements
 
 - Python 3.11+
 - macOS, Linux, or Windows
+- DearPyGui 1.11.1+
 
-### Setup
+## Installation
 
 ```bash
-# Clone the repository
 git clone https://github.com/raybello/local-llm.git
 cd local-llm
 
-# Create virtual environment
 python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
 
-# Install dependencies
 pip install -e .
 
-# Install development dependencies (optional)
+# Development dependencies
 pip install -e ".[dev]"
 ```
 
-## Usage
-
-### Run the Application
+## Quick Start
 
 ```bash
-python main.py
+python3 main.py
+```
+or
+```bash
+python3 -c "from lighthouse.presentation.dearpygui.app import run_app; run_app()"
 ```
 
-### Using the Node Editor
+### Programmatic Usage
 
-1. **Add Nodes**: Right-click in the canvas to open the context menu
-2. **Connect Nodes**: Drag from an output port to an input port
-3. **Configure Nodes**: Click the edit button on a node to open its inspector
-4. **Execute Workflow**: Click the play button on a trigger node
+```python
+from lighthouse.container import create_headless_container
+from lighthouse.domain.models.workflow import Workflow
+
+# Initialize service container
+container = create_headless_container()
+factory = container.node_factory
+
+# Create nodes
+input_node = factory.create_node("Input", name="UserData")
+input_node.set_state({"properties": [{"key": "value", "value": "42"}]})
+
+calc_node = factory.create_node("Calculator", name="Processor")
+calc_node.set_state({"expression": "{{$node['UserData'].data.value}} * 2"})
+
+# Build workflow
+workflow = Workflow(id="pipeline", name="Data Pipeline")
+workflow.add_node(input_node)
+workflow.add_node(calc_node)
+workflow.add_connection(input_node.id, calc_node.id)
+
+# Execute
+result = container.workflow_orchestrator.execute_workflow(
+    workflow,
+    triggered_by=input_node.id
+)
+```
+
+## Architecture
+
+Lighthouse follows Clean Architecture principles with strict layer separation:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Presentation Layer                                         │
+│  └── DearPyGui UI, Node Renderer, Theme Manager             │
+├─────────────────────────────────────────────────────────────┤
+│  Application Layer                                          │
+│  └── WorkflowOrchestrator, NodeFactory, ExecutionManager    │
+├─────────────────────────────────────────────────────────────┤
+│  Domain Layer (Zero External Dependencies)                  │
+│  └── Models, Protocols, ExpressionService, TopologyService  │
+├─────────────────────────────────────────────────────────────┤
+│  Infrastructure Layer                                       │
+│  └── FileLogger, HTTP Clients, Command Execution            │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Component Overview
+
+| Layer | Component | Responsibility |
+|-------|-----------|----------------|
+| **Domain** | `ExpressionService` | Parses and evaluates `{{}}` expressions against execution context |
+| **Domain** | `TopologyService` | Computes topological ordering for DAG traversal |
+| **Application** | `WorkflowOrchestrator` | Coordinates end-to-end workflow execution |
+| **Application** | `NodeFactory` | Instantiates nodes from registry by type identifier |
+| **Application** | `ExecutionManager` | Tracks session state and node execution records |
+| **Presentation** | `DearPyGuiNodeRenderer` | Renders node UI components and handles user interaction |
+
+### Execution Pipeline
+
+1. **Trigger** - User initiates workflow from a trigger node
+2. **Topology Resolution** - `TopologyService.topological_sort()` determines execution order
+3. **Context Building** - For each node, upstream results are aggregated into execution context
+4. **Expression Resolution** - `ExpressionService.resolve()` interpolates expressions in node state
+5. **Node Execution** - `node.execute(context)` performs the node's operation
+6. **Result Capture** - `ExecutionManager` records timing, status, and output data
 
 ### Expression Syntax
 
-Use `{{}}` expressions to reference data from upstream nodes:
+```
+{{$node["NodeName"].data.property}}       # Property access
+{{$node["Input"].data.count * 2}}         # Arithmetic operations
+{{$node["Input"].data.age >= 18}}         # Boolean comparisons
+{{$node["API"].data.items[0].id}}         # Array indexing
+{{$node["Config"].data.settings.nested}}  # Nested property access
+```
+
+## Project Structure
 
 ```
-{{$node["NodeName"].data.property}}     # Access node output
-{{$node["Input"].data.age * 2}}         # Arithmetic operations
-{{$node["Input"].data.age >= 18}}       # Boolean comparisons
-{{$node["API"].data.items[0].id}}       # Array access
+lighthouse/
+├── container.py                 # DI container configuration
+├── config.py                    # Application settings
+├── domain/
+│   ├── models/
+│   │   ├── node.py              # Node, ExecutionResult, NodeMetadata
+│   │   ├── workflow.py          # Workflow, Connection
+│   │   ├── execution.py         # ExecutionSession, NodeExecutionRecord
+│   │   └── field_types.py       # FieldDefinition, FieldType enums
+│   ├── protocols/               # INode, IExecutor, ILogger, INodeRenderer
+│   ├── services/
+│   │   ├── expression_service.py
+│   │   ├── topology_service.py
+│   │   └── context_builder.py
+│   └── exceptions.py
+├── application/
+│   └── services/
+│       ├── node_factory.py
+│       ├── execution_manager.py
+│       └── workflow_orchestrator.py
+├── nodes/
+│   ├── base/base_node.py        # Abstract base implementation
+│   ├── trigger/                 # ManualTrigger, Input
+│   ├── execution/               # Calculator, HTTPRequest, Code, etc.
+│   └── registry.py              # Dynamic node type registry
+├── presentation/
+│   └── dearpygui/
+│       ├── app.py
+│       ├── theme_manager.py
+│       └── node_renderer.py
+└── infrastructure/
+    └── logging/
+tests/
+├── unit/                        # Isolated component tests
+└── integration/                 # End-to-end workflow tests
 ```
 
 ## Development
 
-### Run Tests
+### Testing
 
 ```bash
-# Run all tests with coverage
-pytest
+# Full test suite with coverage
+pytest tests/ -v --cov=lighthouse --cov-report=html
 
-# Run specific test file
-pytest tests/unit/domain/test_expression_service.py
+# Unit tests only
+pytest tests/unit/ -v
 
-# Run with verbose output
-pytest -v
+# Integration tests only
+pytest tests/integration/ -v
+
+# Specific module
+pytest tests/unit/domain/test_expression_service.py -v
 ```
 
 ### Code Quality
@@ -85,124 +201,63 @@ pytest -v
 # Linting
 ruff check lighthouse/
 
-# Format code
+# Formatting
 ruff format lighthouse/
 
 # Type checking
 mypy lighthouse/
-```
 
-### Pre-commit Hooks
-
-```bash
-# Install pre-commit hooks
+# Pre-commit hooks
 pre-commit install
-
-# Run hooks manually
 pre-commit run --all-files
 ```
 
-## Architecture
+### Building
 
-Lighthouse follows Clean Architecture principles with four layers:
+```bash
+# Package build
+python -m build
 
-```
-┌─────────────────────────────────────────────────┐
-│   Presentation Layer (DearPyGui UI)             │
-├─────────────────────────────────────────────────┤
-│   Application Layer (Use Cases, Orchestration)  │
-├─────────────────────────────────────────────────┤
-│   Domain Layer (Business Logic, Models)         │
-├─────────────────────────────────────────────────┤
-│   Infrastructure Layer (Logging, HTTP, etc.)    │
-└─────────────────────────────────────────────────┘
+# Standalone executable
+pyinstaller --onefile main.py --name lighthouse --add-data "fonts:fonts"
 ```
 
-### Key Components
+## API Reference
 
-- **Domain Layer** (`lighthouse/domain/`): Pure business logic with zero external dependencies
-  - Models: Node, Workflow, ExecutionResult
-  - Services: ExpressionService, TopologyService
-  - Protocols: INode, IExecutor, ILogger, INodeRenderer
-
-- **Application Layer** (`lighthouse/application/`): Orchestrates domain operations
-  - WorkflowOrchestrator: Coordinates workflow execution
-  - NodeFactory: Creates node instances
-  - ExecutionManager: Manages execution sessions
-
-- **Presentation Layer** (`lighthouse/presentation/`): UI components
-  - LighthouseUI: Main application window
-  - ThemeManager: Visual theming
-  - DearPyGuiNodeRenderer: Node rendering
-
-- **Infrastructure Layer** (`lighthouse/infrastructure/`): External dependencies
-  - FileLogger: File-based logging
-  - HTTP clients, command execution
-
-### Dependency Injection
-
-Services are wired through a `ServiceContainer`:
+### ServiceContainer
 
 ```python
-from lighthouse.container import create_container
+from lighthouse.container import create_headless_container, create_ui_container
 
-# Create container with all dependencies
-container = create_container()
+# Headless mode (testing, scripting)
+container = create_headless_container()
 
-# Access services
-orchestrator = container.workflow_orchestrator
-factory = container.node_factory
+# UI mode (full application)
+container = create_ui_container()
 ```
 
-## Project Structure
+### Node Protocol
 
-```
-lighthouse/
-├── main.py                    # Entry point
-├── lighthouse/
-│   ├── domain/                # Business logic
-│   │   ├── models/            # Domain models
-│   │   ├── protocols/         # Interfaces
-│   │   └── services/          # Domain services
-│   ├── application/           # Use cases
-│   │   └── services/          # App services
-│   ├── infrastructure/        # External deps
-│   │   └── logging/           # Logging impl
-│   ├── presentation/          # UI layer
-│   │   └── dearpygui/         # DearPyGui UI
-│   ├── nodes/                 # Node implementations
-│   │   ├── trigger/           # Trigger nodes
-│   │   └── execution/         # Execution nodes
-│   ├── container.py           # DI container
-│   └── config.py              # Configuration
-├── tests/
-│   ├── unit/                  # Unit tests
-│   └── integration/           # Integration tests
-└── src/                       # Legacy implementation
-```
+```python
+from lighthouse.domain.protocols import INode
 
-## Build Executable
+class CustomNode(INode):
+    def execute(self, context: dict) -> ExecutionResult:
+        # Implementation
+        pass
 
-```bash
-# macOS/Linux
-pyinstaller --onefile main.py --name lighthouse --add-data "fonts:fonts"
+    def get_state(self) -> dict:
+        pass
 
-# Windows
-pyinstaller --onefile main.py --name lighthouse --add-data "fonts;fonts"
-```
-
-## Release
-
-```bash
-git tag -a v[version] -m "Release v[version]"
-git push origin v[version]
+    def set_state(self, state: dict) -> None:
+        pass
 ```
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License - see [LICENSE](LICENSE) for details.
 
 ## Acknowledgments
 
-- Built with [DearPyGui](https://github.com/hoffstadt/DearPyGui)
-- Inspired by workflow automation platforms like [N8n](https://n8n.io/)
+- [DearPyGui](https://github.com/hoffstadt/DearPyGui) - Immediate mode GUI framework
+- [n8n](https://n8n.io/) - Workflow automation inspiration
