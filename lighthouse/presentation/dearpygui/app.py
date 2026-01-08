@@ -5,6 +5,7 @@ Provides the visual node editor interface using the new architecture
 with dependency injection and clean separation of concerns.
 """
 
+import copy
 import json
 import os
 import subprocess
@@ -1342,17 +1343,19 @@ class LighthouseUI:
             # Build context from completed nodes
             context = self._build_execution_context()
 
+            # Save original state (deep copy to preserve expressions)
+            original_state = copy.deepcopy(node.state)
+
             # Resolve expressions in node state
             resolved_state = expr_service.resolve_dict(node.state.copy(), context)
 
             # Temporarily replace node state with resolved values
-            original_state = node.state
             node.state = resolved_state
 
             # Execute the node
             result = node.execute(context)
 
-            # Restore original state
+            # Restore original state with expressions intact
             node.state = original_state
 
             if result.success:
