@@ -10,3 +10,5 @@ build/
 # OS files (optional, but recommended)
 .DS_Store
 Thumbs.db
+coverage.xml
+.coverage
