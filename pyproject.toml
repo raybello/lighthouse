@@ -10,7 +10,7 @@ readme = "README.md"
 license = {text = "MIT"}
 
 dependencies = [
-    "dearpygui==1.8.0",
+    "dearpygui==1.11.1",
     "rich==14.2.0",
     "requests>=2.31.0",
 ]

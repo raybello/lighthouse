@@ -248,7 +248,7 @@ tests/
 
 ## Dependencies
 
-- `dearpygui==1.8.0` - GUI framework
+- `dearpygui==1.11.1` - GUI framework
 - `rich==14.2.0` - Console output formatting
 - `requests>=2.31.0` - HTTP requests
 - Python 3.11+
