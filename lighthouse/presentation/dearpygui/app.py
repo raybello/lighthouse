@@ -70,6 +70,7 @@ class LighthouseUI:
         # File state tracking
         self.current_file_path: Optional[str] = None
         self.is_dirty: bool = False
+        self._loading_workflow: bool = False  # Flag to prevent duplicate connections during load
 
         # Components
         self.theme_manager = ThemeManager()
@@ -348,6 +349,10 @@ class LighthouseUI:
             self._check_unsaved_changes()
             return
 
+        # Delete existing dialog if it exists
+        if dpg.does_item_exist("file_dialog_open"):
+            dpg.delete_item("file_dialog_open")
+
         # Open file dialog
         dpg.add_file_dialog(
             directory_selector=False,
@@ -377,6 +382,10 @@ class LighthouseUI:
 
     def _save_workflow_as(self) -> None:
         """Save workflow to a new file (prompt for location)."""
+        # Delete existing dialog if it exists
+        if dpg.does_item_exist("file_dialog_save"):
+            dpg.delete_item("file_dialog_save")
+
         # Open save file dialog
         dpg.add_file_dialog(
             directory_selector=False,
@@ -442,6 +451,9 @@ class LighthouseUI:
     def _load_workflow_from_file(self, filepath: str) -> None:
         """Load workflow from the specified file."""
         try:
+            # Set loading flag to prevent duplicate connections
+            self._loading_workflow = True
+
             # Load using workflow file service
             loaded_workflow, loaded_positions = self.container.workflow_file_service.load_from_file(
                 filepath
@@ -504,22 +516,34 @@ class LighthouseUI:
 
         except Exception as e:
             console.print(f"[red]Error loading workflow: {e}[/red]")
-            # Show error dialog
-            with dpg.window(
+            import traceback
+
+            traceback.print_exc()
+
+            # Delete existing error dialog if it exists
+            if dpg.does_item_exist("load_error_dialog"):
+                dpg.delete_item("load_error_dialog")
+
+            # Show error dialog (don't use context manager to avoid pop_container_stack error)
+            error_dialog = dpg.add_window(
                 label="Load Error",
                 modal=True,
                 show=True,
                 tag="load_error_dialog",
                 no_resize=True,
                 pos=[self.width // 2 - 150, self.height // 2 - 50],
-            ):
-                dpg.add_text(f"Failed to load workflow:\n{str(e)}")
-                dpg.add_separator()
-                dpg.add_button(
-                    label="OK",
-                    callback=lambda: dpg.delete_item("load_error_dialog"),
-                    width=-1,
-                )
+            )
+            dpg.add_text(f"Failed to load workflow:\n{str(e)}", parent=error_dialog)
+            dpg.add_separator(parent=error_dialog)
+            dpg.add_button(
+                label="OK",
+                callback=lambda: dpg.delete_item("load_error_dialog"),
+                width=-1,
+                parent=error_dialog,
+            )
+        finally:
+            # Always reset loading flag
+            self._loading_workflow = False
 
     def _setup_execution_logs_ui(self) -> None:
         """
@@ -1112,11 +1136,17 @@ class LighthouseUI:
         else:
             self.connections[target_node_id] = [source_node_id]
 
-        # Update workflow connections
-        self.workflow.add_connection(source_node_id, target_node_id)
+        # Update workflow connections (skip if we're loading a workflow to prevent duplicates)
+        if not self._loading_workflow:
+            try:
+                self.workflow.add_connection(source_node_id, target_node_id)
+            except Exception as e:
+                # Connection already exists, which is fine during loading
+                console.print(f"[yellow]Connection already exists: {e}[/yellow]")
 
-        # Mark workflow as modified
-        self._mark_dirty()
+        # Mark workflow as modified (only if not loading)
+        if not self._loading_workflow:
+            self._mark_dirty()
 
     def _on_delink(self, sender, app_data) -> None:
         """Handle node delinking."""
