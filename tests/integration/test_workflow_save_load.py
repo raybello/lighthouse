@@ -368,11 +368,11 @@ class TestWorkflowSaveLoad:
             loaded_calc2 = loaded_workflow.nodes[calc2_node.id]
 
             assert calc1_expression in loaded_calc1.state.get("field_a", ""), (
-                f"Calc1 expression lost after execution+save! Got: {loaded_calc1.state.get('field_a')}"
+                f"Calc1 expression lost! Got: {loaded_calc1.state.get('field_a')}"
             )
 
             assert calc2_expression in loaded_calc2.state.get("field_a", ""), (
-                f"Calc2 expression lost after execution+save! Got: {loaded_calc2.state.get('field_a')}"
+                f"Calc2 expression lost! Got: {loaded_calc2.state.get('field_a')}"
             )
 
     def test_all_node_types_expressions_preserved(self, container):

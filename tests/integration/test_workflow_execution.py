@@ -404,9 +404,7 @@ class TestExpressionPreservation:
         workflow.add_connection(input_node.id, http_node.id)
 
         # Execute workflow
-        result = container.workflow_orchestrator.execute_workflow(
-            workflow, triggered_by=input_node.id
-        )
+        container.workflow_orchestrator.execute_workflow(workflow, triggered_by=input_node.id)
 
         # Verify expression is preserved in node state (regardless of execution success)
         assert expression in http_node.state.get("url", ""), (
@@ -540,7 +538,9 @@ class TestExpressionPreservation:
         form_expression = '{{$node["Calc"].data.result}}'
         form_node.update_state(
             {
-                "form_fields_json": f'[{{"name": "result", "type": "number", "value": "{form_expression}"}}]'
+                "form_fields_json": (
+                    f'[{{"name": "result", "type": "number", "value": "{form_expression}"}}]'
+                )
             }
         )
 

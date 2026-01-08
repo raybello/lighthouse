@@ -40,7 +40,10 @@ class TestNestedExpressions:
         # Configure with nested expression
         input_node.update_state(
             {
-                "properties": '[{"name": "a", "value": "5", "type": "number"}, {"name": "b", "value": "3", "type": "number"}]'
+                "properties": (
+                    '[{"name": "a", "value": "5", "type": "number"}, '
+                    '{"name": "b", "value": "3", "type": "number"}]'
+                )
             }
         )
 
@@ -168,9 +171,7 @@ class TestInvalidExpressions:
         workflow.add_node(calc_node)
 
         # Execute - may fail or resolve to empty value
-        result = container.workflow_orchestrator.execute_workflow(
-            workflow, triggered_by=calc_node.id
-        )
+        container.workflow_orchestrator.execute_workflow(workflow, triggered_by=calc_node.id)
 
         # Expression should still be preserved in node state regardless of execution status
         assert invalid_expr in calc_node.state.get("field_a", "")
@@ -193,9 +194,7 @@ class TestInvalidExpressions:
         workflow.add_connection(input_node.id, calc_node.id)
 
         # Execute - likely to fail
-        result = container.workflow_orchestrator.execute_workflow(
-            workflow, triggered_by=input_node.id
-        )
+        container.workflow_orchestrator.execute_workflow(workflow, triggered_by=input_node.id)
 
         # Expression should be preserved regardless of execution status
         assert invalid_expr in calc_node.state.get("field_a", "")
@@ -218,9 +217,7 @@ class TestInvalidExpressions:
         workflow.add_connection(input_node.id, calc_node.id)
 
         # Execute
-        result = container.workflow_orchestrator.execute_workflow(
-            workflow, triggered_by=input_node.id
-        )
+        container.workflow_orchestrator.execute_workflow(workflow, triggered_by=input_node.id)
 
         # Expression should be preserved regardless of execution status
         assert missing_prop_expr in calc_node.state.get("field_a", "")
@@ -239,9 +236,7 @@ class TestEmptyExpressions:
         workflow.add_node(calc_node)
 
         # Execute
-        result = container.workflow_orchestrator.execute_workflow(
-            workflow, triggered_by=calc_node.id
-        )
+        container.workflow_orchestrator.execute_workflow(workflow, triggered_by=calc_node.id)
 
         # Empty expression might fail or return empty result
         # But state should preserve the empty string
@@ -258,9 +253,7 @@ class TestEmptyExpressions:
         workflow.add_node(calc_node)
 
         # Execute
-        result = container.workflow_orchestrator.execute_workflow(
-            workflow, triggered_by=calc_node.id
-        )
+        container.workflow_orchestrator.execute_workflow(workflow, triggered_by=calc_node.id)
 
         # Whitespace should be preserved
         assert calc_node.state.get("field_a") == whitespace_expr
@@ -276,9 +269,7 @@ class TestEmptyExpressions:
         workflow.add_node(calc_node)
 
         # Execute
-        result = container.workflow_orchestrator.execute_workflow(
-            workflow, triggered_by=calc_node.id
-        )
+        container.workflow_orchestrator.execute_workflow(workflow, triggered_by=calc_node.id)
 
         # Empty braces should be preserved
         assert empty_braces in calc_node.state.get("field_a", "")
@@ -365,9 +356,7 @@ class TestComplexExpressionScenarios:
         workflow.add_connection(input_node.id, calc_node.id)
 
         # Execute
-        result = container.workflow_orchestrator.execute_workflow(
-            workflow, triggered_by=input_node.id
-        )
+        container.workflow_orchestrator.execute_workflow(workflow, triggered_by=input_node.id)
 
         # Verify expression preserved
         assert bool_expr in calc_node.state.get("field_a", "")
@@ -381,7 +370,10 @@ class TestComplexExpressionScenarios:
 
         input_node.update_state(
             {
-                "properties": '[{"name": "first", "value": "John", "type": "string"}, {"name": "last", "value": "Doe", "type": "string"}]'
+                "properties": (
+                    '[{"name": "first", "value": "John", "type": "string"}, '
+                    '{"name": "last", "value": "Doe", "type": "string"}]'
+                )
             }
         )
 
@@ -389,7 +381,9 @@ class TestComplexExpressionScenarios:
         concat_expr = '{{$node["Names"].data.first + " " + $node["Names"].data.last}}'
         form_node.update_state(
             {
-                "form_fields_json": f'[{{"name": "fullname", "type": "string", "value": "{concat_expr}"}}]'
+                "form_fields_json": (
+                    f'[{{"name": "fullname", "type": "string", "value": "{concat_expr}"}}]'
+                )
             }
         )
 
@@ -398,9 +392,7 @@ class TestComplexExpressionScenarios:
         workflow.add_connection(input_node.id, form_node.id)
 
         # Execute
-        result = container.workflow_orchestrator.execute_workflow(
-            workflow, triggered_by=input_node.id
-        )
+        container.workflow_orchestrator.execute_workflow(workflow, triggered_by=input_node.id)
 
         # Verify expression preserved
         assert concat_expr in form_node.state.get("form_fields_json", "")
@@ -414,7 +406,10 @@ class TestComplexExpressionScenarios:
 
         input_node.update_state(
             {
-                "properties": '[{"name": "a", "value": "hello", "type": "string"}, {"name": "b", "value": "world", "type": "string"}]'
+                "properties": (
+                    '[{"name": "a", "value": "hello", "type": "string"}, '
+                    '{"name": "b", "value": "world", "type": "string"}]'
+                )
             }
         )
 
@@ -427,9 +422,7 @@ class TestComplexExpressionScenarios:
         workflow.add_connection(input_node.id, command_node.id)
 
         # Execute
-        result = container.workflow_orchestrator.execute_workflow(
-            workflow, triggered_by=input_node.id
-        )
+        container.workflow_orchestrator.execute_workflow(workflow, triggered_by=input_node.id)
 
         # Verify both expressions preserved
         assert '{{$node["Data"].data.a}}' in command_node.state.get("command", "")
