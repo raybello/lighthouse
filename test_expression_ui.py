@@ -50,7 +50,7 @@ def test_expression_preservation():
     workflow.add_connection(input_node.id, calc_node.id)
 
     # Execute workflow
-    print("\n🚀 Executing workflow...")
+    print("\n Executing workflow...")
     result = container.workflow_orchestrator.execute_workflow(workflow, triggered_by=input_node.id)
     print(result)
 
@@ -66,7 +66,7 @@ def test_expression_preservation():
     print(f"  ✓ Calc expr preserved: {calc_expr_after}")
 
     # Save workflow to file
-    print("\n💾 Saving workflow to file...")
+    print("\n Saving workflow to file...")
     with tempfile.NamedTemporaryFile(mode="w", suffix=".lh", delete=False) as f:
         temp_file = f.name
         positions = {input_node.id: (100, 100), http_node.id: (300, 100), calc_node.id: (300, 300)}
@@ -93,7 +93,7 @@ def test_expression_preservation():
     assert found_calc_expr, "Calc expression not found in saved file!"
 
     # Load workflow from file
-    print("\n📂 Loading workflow from file...")
+    print("\n Loading workflow from file...")
     loaded_workflow, loaded_positions = container.workflow_file_service.load_from_file(temp_file)
 
     # Check expressions are preserved after loading
@@ -118,7 +118,7 @@ def test_expression_preservation():
     # Clean up
     os.unlink(temp_file)
 
-    print("\n✅ All tests passed! Expressions are preserved throughout the workflow lifecycle.")
+    print("\n All tests passed! Expressions are preserved throughout the workflow lifecycle.")
 
 
 if __name__ == "__main__":
