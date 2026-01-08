@@ -78,11 +78,12 @@ class DearPyGuiNodeRenderer(INodeRenderer):
                 shape=dpg.mvNode_PinShape_Circle,
                 attribute_type=attr_type,
             ):
+                # Use lambda without parameters, exactly like legacy
+                # Capture node.id in closure to avoid late binding issues
+                node_id_for_callback = node.id
+
                 # Edit button - opens inspector
                 if node.metadata.has_config:
-                    # Use lambda without parameters, exactly like legacy
-                    # Capture node.id in closure to avoid late binding issues
-                    node_id_for_callback = node.id
                     edit_btn = dpg.add_button(
                         label="Edit",
                         callback=lambda: self._show_inspector(node_id_for_callback),
