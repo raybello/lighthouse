@@ -40,17 +40,17 @@ class ExecutionTraceRenderer:
     - Hover tooltips with node details
     """
 
-    # Color definitions for node types (RGBA normalized 0-1)
-    NODE_TYPE_COLORS: Dict[str, Tuple[float, float, float, float]] = {
-        "Input": (0.13, 0.78, 0.13, 1.0),  # Green for triggers
-        "ManualTrigger": (0.13, 0.78, 0.13, 1.0),  # Green
-        "Calculator": (1.0, 0.78, 0.0, 1.0),  # Yellow/Gold
-        "HTTPRequest": (0.0, 0.59, 1.0, 1.0),  # Blue for network
-        "Code": (0.78, 0.39, 1.0, 1.0),  # Purple
-        "ExecuteCommand": (1.0, 0.5, 0.0, 1.0),  # Orange
-        "ChatModel": (0.0, 0.8, 0.8, 1.0),  # Cyan
-        "Form": (0.9, 0.4, 0.6, 1.0),  # Pink
-        "default": (0.6, 0.6, 0.6, 1.0),  # Gray for unknown
+    # Color definitions for node types (RGB 0-255, Alpha 0-1)
+    NODE_TYPE_COLORS: Dict[str, Tuple[int, int, int, float]] = {
+        "Input": (33, 199, 33, 1.0),  # Green for triggers
+        "ManualTrigger": (33, 199, 33, 1.0),  # Green
+        "Calculator": (255, 199, 0, 1.0),  # Yellow/Gold
+        "HTTPRequest": (0, 150, 255, 1.0),  # Blue for network
+        "Code": (199, 99, 255, 1.0),  # Purple
+        "ExecuteCommand": (255, 128, 0, 1.0),  # Orange
+        "ChatModel": (0, 204, 204, 1.0),  # Cyan
+        "Form": (230, 102, 153, 1.0),  # Pink
+        "default": (153, 153, 153, 1.0),  # Gray for unknown
     }
 
     # Texture size for trace bars
@@ -71,23 +71,28 @@ class ExecutionTraceRenderer:
         self._instance_id = uuid.uuid4().hex[:8]
         return self._instance_id
 
-    def _create_texture_data(self, color: Tuple[float, float, float, float]) -> List[float]:
+    def _create_texture_data(self, color: Tuple[int, int, int, float]) -> List[float]:
         """
         Create texture data for a solid color.
 
         Args:
-            color: RGBA color tuple (0-1 range)
+            color: RGBA color tuple (RGB 0-255, Alpha 0-1)
 
         Returns:
-            Flat list of RGBA values for the texture
+            Flat list of RGBA values for the texture (normalized to 0-1)
         """
         size = self.TEXTURE_SIZE
         r, g, b, a = color
 
+        # Normalize RGB values to 0-1 range for texture data
+        r_norm = r / 255.0
+        g_norm = g / 255.0
+        b_norm = b / 255.0
+
         # Create solid color texture
         texture_data = []
         for _ in range(size * size):
-            texture_data.extend([r, g, b, a])
+            texture_data.extend([r_norm, g_norm, b_norm, a])
 
         return texture_data
 
@@ -324,16 +329,19 @@ class ExecutionTraceRenderer:
 
     def _update_tooltip(self, instance_id: str) -> None:
         """Update tooltip based on mouse position over traces."""
-        if not dpg.does_item_exist(self._plot_tag):
+        if not self._plot_tag or not dpg.does_item_exist(self._plot_tag):
             return
 
         # Check if mouse is over the plot
         if not dpg.is_item_hovered(self._plot_tag):
-            if dpg.does_item_exist(self._tooltip_tag):
+            if self._tooltip_tag and dpg.does_item_exist(self._tooltip_tag):
                 dpg.configure_item(self._tooltip_tag, show=False)
             return
 
         mouse_plot_pos = dpg.get_plot_mouse_pos()
+        # Convert to float tuple if needed
+        if isinstance(mouse_plot_pos, (list, tuple)):
+            mouse_plot_pos = (float(mouse_plot_pos[0]), float(mouse_plot_pos[1]))
 
         # Check if mouse is over any trace
         tooltip_shown = False
@@ -357,12 +365,13 @@ class ExecutionTraceRenderer:
 
                 # Position tooltip near mouse
                 mouse_pos = dpg.get_mouse_pos(local=False)
-                dpg.set_item_pos(self._tooltip_tag, [mouse_pos[0] + 15, mouse_pos[1] + 15])
-                dpg.configure_item(self._tooltip_tag, show=True)
+                if self._tooltip_tag:
+                    dpg.set_item_pos(self._tooltip_tag, [mouse_pos[0] + 15, mouse_pos[1] + 15])
+                    dpg.configure_item(self._tooltip_tag, show=True)
                 tooltip_shown = True
                 break
 
-        if not tooltip_shown:
+        if not tooltip_shown and self._tooltip_tag:
             dpg.configure_item(self._tooltip_tag, show=False)
 
     def cleanup(self) -> None:

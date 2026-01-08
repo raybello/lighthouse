@@ -488,7 +488,9 @@ class TestNodeTypeColors:
             assert node_type in renderer.NODE_TYPE_COLORS
             color = renderer.NODE_TYPE_COLORS[node_type]
             assert len(color) == 4  # RGBA
-            assert all(0 <= c <= 1 for c in color)
+            # RGB should be 0-255, Alpha should be 0-1
+            assert all(0 <= c <= 255 for c in color[:3])  # RGB
+            assert 0 <= color[3] <= 1  # Alpha
 
     def test_default_color_exists(self):
         """Should have a default color for unknown types."""
@@ -505,7 +507,7 @@ class TestTextureDataCreation:
     def test_texture_data_has_correct_size(self):
         """Texture data should have correct number of elements."""
         renderer = ExecutionTraceRenderer()
-        color = (1.0, 0.5, 0.0, 1.0)
+        color = (255, 128, 0, 1.0)  # RGB 0-255, Alpha 0-1
 
         data = renderer._create_texture_data(color)
 
@@ -516,7 +518,7 @@ class TestTextureDataCreation:
     def test_texture_data_is_solid_color(self):
         """Texture should be solid color throughout."""
         renderer = ExecutionTraceRenderer()
-        color = (1.0, 0.5, 0.3, 1.0)
+        color = (255, 128, 77, 1.0)  # RGB 0-255, Alpha 0-1
 
         data = renderer._create_texture_data(color)
 
@@ -535,11 +537,16 @@ class TestTextureDataCreation:
         center_b = data[center_idx + 2]
         center_a = data[center_idx + 3]
 
-        # All pixels should be the same solid color
-        assert corner_r == center_r == color[0]
-        assert corner_g == center_g == color[1]
-        assert corner_b == center_b == color[2]
-        assert corner_a == center_a == color[3]
+        # All pixels should be the same solid color (normalized to 0-1)
+        expected_r = color[0] / 255.0
+        expected_g = color[1] / 255.0
+        expected_b = color[2] / 255.0
+        expected_a = color[3]
+
+        assert corner_r == center_r == expected_r
+        assert corner_g == center_g == expected_g
+        assert corner_b == center_b == expected_b
+        assert corner_a == center_a == expected_a
 
 
 class TestBoundsAccuracy:
