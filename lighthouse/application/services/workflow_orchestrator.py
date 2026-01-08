@@ -4,6 +4,7 @@ Workflow orchestrator for coordinating node execution.
 Pure business logic with NO UI dependencies.
 """
 
+import copy
 from threading import Event, Thread
 from typing import Any, Callable, Dict, List, Optional
 
@@ -310,15 +311,18 @@ class WorkflowOrchestrator:
         # Get current context
         context = self.execution_manager.get_node_context()
 
-        # Resolve expressions in node state
-        resolved_state = self._resolve_node_state(node, context)
+        # Save original state (deep copy to preserve expressions)
+        original_state = copy.deepcopy(node.state)
 
-        # Update node state with resolved values
-        if resolved_state:
-            node.update_state(resolved_state)
-
-        # Execute node
         try:
+            # Resolve expressions in node state
+            resolved_state = self._resolve_node_state(node, context)
+
+            # Temporarily update node state with resolved values
+            if resolved_state:
+                node.state = resolved_state
+
+            # Execute node
             result = node.execute(context)
 
             # Log success
@@ -341,6 +345,10 @@ class WorkflowOrchestrator:
             from lighthouse.domain.models.node import ExecutionResult
 
             return ExecutionResult.error_result(error=error_message, duration=0.0)
+
+        finally:
+            # ALWAYS restore original state with expressions intact (even if execution failed)
+            node.state = original_state
 
     def _resolve_node_state(self, node: BaseNode, context: Dict[str, Any]) -> Dict[str, Any]:
         """

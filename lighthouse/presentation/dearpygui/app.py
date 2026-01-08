@@ -1336,16 +1336,16 @@ class LighthouseUI:
         # Refresh logs to show node started
         self._refresh_execution_logs()
 
+        # Get expression service for resolving expressions
+        expr_service = self.container.expression_service
+
+        # Build context from completed nodes
+        context = self._build_execution_context()
+
+        # Save original state (deep copy to preserve expressions)
+        original_state = copy.deepcopy(node.state)
+
         try:
-            # Get expression service for resolving expressions
-            expr_service = self.container.expression_service
-
-            # Build context from completed nodes
-            context = self._build_execution_context()
-
-            # Save original state (deep copy to preserve expressions)
-            original_state = copy.deepcopy(node.state)
-
             # Resolve expressions in node state
             resolved_state = expr_service.resolve_dict(node.state.copy(), context)
 
@@ -1354,9 +1354,6 @@ class LighthouseUI:
 
             # Execute the node
             result = node.execute(context)
-
-            # Restore original state with expressions intact
-            node.state = original_state
 
             if result.success:
                 # Store output for context building
@@ -1389,6 +1386,15 @@ class LighthouseUI:
                 execution_manager.log_node_end(node_id, "FAILED", error_message=str(e))
             except (RuntimeError, KeyError):
                 pass
+        finally:
+            # ALWAYS restore original state with expressions intact (even if execution failed)
+            node.state = original_state
+
+            # Update inspector fields if inspector is open (to show expressions, not resolved values)
+            inspector_tag = f"{node_id}_inspector"
+            if dpg.does_item_exist(inspector_tag) and dpg.is_item_visible(inspector_tag):
+                if self.node_renderer:
+                    self.node_renderer.update_inspector_fields(node)
 
     def _build_execution_context(self) -> Dict[str, Any]:
         """Build execution context from completed nodes."""
