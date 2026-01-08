@@ -6,89 +6,256 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Lighthouse is a visual node-based workflow editor built with DearPyGui. It allows users to create and connect nodes for workflow automation, similar to N8n. The application supports dynamic expression evaluation with `{{}}` syntax, allowing nodes to reference outputs from upstream nodes.
 
+**Version 2.0** introduces a clean architecture with proper separation of concerns, dependency injection, and comprehensive test coverage.
+
 ## Commands
 
 ### Run the Application
 ```bash
+# Run with legacy code (original implementation)
 python main.py
+
+# Run with new architecture (v2.0 - recommended)
+python3 -c "from lighthouse.presentation.dearpygui.app import run_app; run_app()"
 ```
+
+### Testing Workflow (For Development)
+When making changes to the application, follow this workflow:
+1. Run tests: `pytest tests/ --tb=short -q`
+2. Run the GUI app for user testing
+3. User provides feedback after each execution
+4. Iterate based on feedback
 
 ### Run Tests
 ```bash
-python test_expressions.py
-python test_form_validation.py
-python test_input_validation.py
+# Run all tests with coverage
+pytest tests/ -v --cov=lighthouse
+
+# Run unit tests only
+pytest tests/unit/ -v
+
+# Run integration tests only
+pytest tests/integration/ -v
 ```
 
-### Build Executable
+### Development
 ```bash
-# macOS/Linux
-pyinstaller --onefile main.py --name lighthouse --add-data "fonts:fonts"
+# Install with dev dependencies
+pip install -e ".[dev]"
 
-# Windows
-pyinstaller --onefile main.py --name lighthouse --add-data "fonts;fonts"
+# Run linting
+ruff check lighthouse/
+
+# Run type checking
+mypy lighthouse/
+
+# Setup pre-commit hooks
+pre-commit install
 ```
 
-### Create Release
+### Build & Release
 ```bash
-git tag -a v[version] -F CHANGELOG.md
+# Build package
+python -m build
+
+# Create release
+git tag -a v[version] -m "Release v[version]"
 git push origin v[version]
 ```
 
-## Architecture
+## Architecture (v2.0)
 
-### Core Components
+### Layered Architecture (Clean Architecture)
 
-- **`main.py`** - Entry point, creates and runs `LighthouseApp`
-- **`src/lighthouse.py`** - Main application class managing DearPyGui context, viewport, node editor, and workflow execution
-- **`src/node_base.py`** - Abstract base class `NodeBase` defining node UI, state management, and inspector windows
-- **`src/nodes.py`** - Concrete node implementations and node type enums (`ExecutionNodes`, `TriggerNodes`)
-- **`src/executor.py`** - Workflow execution engine managing node context and expression resolution
-- **`src/expression_engine.py`** - Parses and evaluates `{{}}` expressions with node context
-- **`src/logging_service.py`** - Execution tracking, session management, and log file creation
+```
+┌─────────────────────────────────────────────────┐
+│   Presentation Layer (UI) - depends on ↓        │
+│   lighthouse/presentation/                      │
+├─────────────────────────────────────────────────┤
+│   Application Layer (Use Cases) - depends on ↓  │
+│   lighthouse/application/                       │
+├─────────────────────────────────────────────────┤
+│   Domain Layer (Business Logic) - zero deps    │
+│   lighthouse/domain/                            │
+├─────────────────────────────────────────────────┤
+│   Infrastructure Layer (External) - implements ↑│
+│   lighthouse/infrastructure/                    │
+└─────────────────────────────────────────────────┘
+```
+
+### Directory Structure
+
+```
+lighthouse/
+├── __init__.py
+├── container.py              # DI container - wires all services
+├── config.py                 # Application configuration
+│
+├── domain/                   # Pure business logic (no external deps)
+│   ├── models/              # Domain entities
+│   │   ├── node.py          # Node, ExecutionResult, NodeMetadata
+│   │   ├── workflow.py      # Workflow, Connection
+│   │   ├── execution.py     # ExecutionSession, NodeExecutionRecord
+│   │   └── field_types.py   # FieldDefinition, FieldType
+│   ├── protocols/           # Interfaces (INode, IExecutor, etc.)
+│   ├── services/            # Domain services
+│   │   ├── expression_service.py  # Expression evaluation
+│   │   ├── topology_service.py    # Graph algorithms
+│   │   └── context_builder.py     # Context building
+│   └── exceptions.py        # Domain exceptions
+│
+├── application/             # Application services
+│   └── services/
+│       ├── node_factory.py          # Creates node instances
+│       ├── execution_manager.py     # Manages execution sessions
+│       └── workflow_orchestrator.py # Coordinates execution
+│
+├── nodes/                   # Node implementations
+│   ├── base/
+│   │   └── base_node.py     # Abstract base (pure domain)
+│   ├── trigger/             # Trigger nodes
+│   │   ├── manual_trigger_node.py
+│   │   └── input_node.py
+│   ├── execution/           # Execution nodes
+│   │   ├── calculator_node.py
+│   │   ├── http_node.py
+│   │   ├── command_node.py
+│   │   ├── code_node.py
+│   │   ├── form_node.py
+│   │   └── chat_model_node.py
+│   └── registry.py          # Dynamic node registry
+│
+├── presentation/            # UI layer
+│   └── dearpygui/
+│       ├── app.py           # Main application
+│       ├── theme_manager.py # Theme handling
+│       └── node_renderer.py # Node rendering
+│
+└── infrastructure/          # External dependencies
+    ├── logging/
+    └── external/
+```
+
+### Key Components
+
+#### Dependency Injection Container (`container.py`)
+```python
+from lighthouse.container import create_headless_container, create_ui_container
+
+# For testing (no UI)
+container = create_headless_container()
+
+# For UI mode
+container = create_ui_container()
+
+# Access services
+factory = container.node_factory
+orchestrator = container.workflow_orchestrator
+```
+
+#### Node Creation
+```python
+from lighthouse.container import create_headless_container
+
+container = create_headless_container()
+factory = container.node_factory
+
+# Create nodes
+input_node = factory.create_node("Input", name="MyInput")
+calc_node = factory.create_node("Calculator", name="Calc")
+```
+
+#### Workflow Execution
+```python
+from lighthouse.domain.models.workflow import Workflow
+
+workflow = Workflow(id="test", name="Test Workflow")
+workflow.add_node(input_node)
+workflow.add_node(calc_node)
+workflow.add_connection(input_node.id, calc_node.id)
+
+result = container.workflow_orchestrator.execute_workflow(
+    workflow,
+    triggered_by=input_node.id
+)
+```
 
 ### Node Types
 
 **Trigger Nodes** (no inputs, start workflows):
-- `ManualTriggerNode` - Manual workflow trigger
-- `InputNode` - Provides static data with property/value pairs
+- `ManualTrigger` - Manual workflow trigger
+- `Input` - Provides static data with property/value pairs
 
 **Execution Nodes** (have inputs, perform actions):
-- `HTTPRequestNode` - HTTP requests (GET, POST, etc.) with JSON support
-- `ExecuteCommandNode` - Shell command execution with stdout/stderr capture
-- `ChatModelNode` - LLM/chat model integration (OpenAI-compatible API)
-- `CalculatorNode` - Arithmetic operations with expression support
-- `FormNode` - Dynamic forms with typed fields (string, number, boolean, object)
-- `CodeNode` - Sandboxed Python code execution with 30s timeout
+- `Calculator` - Arithmetic operations with expression support
+- `HTTPRequest` - HTTP requests (GET, POST, etc.)
+- `ExecuteCommand` - Shell command execution
+- `ChatModel` - LLM/chat model integration
+- `Form` - Dynamic forms with typed fields
+- `Code` - Sandboxed Python code execution
 
 ### Expression System
 
 The `{{}}` expression syntax allows dynamic value references:
-- `{{$node["NodeName"].data.property}}` - Access node output
-- `{{$node["Input"].data.age * 2}}` - Arithmetic operations
-- `{{$node["Input"].data.age >= 18}}` - Boolean comparisons
+```
+{{$node["NodeName"].data.property}}     # Access node output
+{{$node["Input"].data.age * 2}}         # Arithmetic operations
+{{$node["Input"].data.age >= 18}}       # Boolean comparisons
+```
 
-Expressions are resolved at runtime by `ExpressionEngine` using context built from completed upstream nodes.
+Expressions are resolved by `ExpressionService` using context from completed upstream nodes.
 
-### Execution Flow
+### Execution Flow (New Architecture)
 
-1. `LighthouseApp._exec_graph()` performs topological sort of nodes
-2. Context is built from previously completed nodes via `_build_context_from_completed_nodes()`
-3. Each node executes in order via `_execute_step()`
-4. Node outputs are stored in context for downstream expression resolution
-5. `Executor` tracks all node inputs/outputs and manages logging
+1. `WorkflowOrchestrator.execute_workflow()` receives workflow and trigger node
+2. `TopologyService.topological_sort()` determines execution order
+3. For each node:
+   - `ExpressionService.resolve()` evaluates expressions in node state
+   - `node.execute(context)` runs the node logic
+   - `ExecutionManager` tracks session and node records
+4. Results returned with status and per-node outcomes
 
-### UI Structure
+### Legacy Code (`src/`)
 
-- Primary window contains tabs: Node Editor and Execution Logs
-- Node Editor uses DearPyGui's node editor with minimap
-- Right-click context menu for adding nodes
-- Each node has an inspector window for configuration (modal)
-- Nodes support rename, delete, edit, and execute actions
+The original implementation remains in `src/` for backward compatibility:
+- `src/lighthouse.py` - Main application class
+- `src/node_base.py` - Legacy node base class
+- `src/nodes.py` - Legacy node implementations
+- `src/executor.py` - Legacy execution engine
+- `src/expression_engine.py` - Legacy expression parser
+
+## Testing
+
+**426 tests with 87% code coverage**
+
+```bash
+# Run all tests
+pytest tests/ -v
+
+# Run with coverage
+pytest tests/ --cov=lighthouse --cov-report=html
+```
+
+### Test Structure
+```
+tests/
+├── unit/                    # Fast, isolated tests
+│   ├── domain/             # Domain model tests
+│   ├── nodes/              # Node implementation tests
+│   └── application/        # Service tests
+└── integration/            # End-to-end workflow tests
+```
 
 ## Dependencies
 
 - `dearpygui==1.8.0` - GUI framework
 - `rich==14.2.0` - Console output formatting
-- `requests` - HTTP requests (for HTTPRequestNode and ChatModelNode)
+- `requests>=2.31.0` - HTTP requests
 - Python 3.11+
+
+### Dev Dependencies
+- `pytest` - Testing framework
+- `pytest-cov` - Coverage reporting
+- `ruff` - Linting and formatting
+- `mypy` - Type checking
+- `pre-commit` - Git hooks
