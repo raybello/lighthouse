@@ -93,11 +93,7 @@ class LighthouseUI:
             self.theme_manager.setup_fonts(font_path, size=17)
 
         # Create viewport
-        dpg.create_viewport(
-            title=self.title,
-            width=self.width,
-            height=self.height
-        )
+        dpg.create_viewport(title=self.title, width=self.width, height=self.height)
 
         # Setup UI components
         self._setup_ui()
@@ -113,7 +109,7 @@ class LighthouseUI:
 
     def _resource_path(self, relative_path: str) -> str:
         """Get absolute path to resource (works for dev and PyInstaller)."""
-        if hasattr(sys, '_MEIPASS'):
+        if hasattr(sys, "_MEIPASS"):
             return os.path.join(sys._MEIPASS, relative_path)
         return os.path.join(os.path.abspath("."), relative_path)
 
@@ -139,7 +135,7 @@ class LighthouseUI:
             delink_callback=self._on_delink,
             minimap=True,
             minimap_location=dpg.mvNodeMiniMap_Location_BottomRight,
-            tag="node_editor"
+            tag="node_editor",
         ) as self._editor_id:
             pass
 
@@ -202,60 +198,54 @@ class LighthouseUI:
                     label="All",
                     tag="filter_all_btn",
                     callback=lambda: self._filter_executions("ALL"),
-                    width=80
+                    width=80,
                 )
                 dpg.add_button(
                     label="Running",
                     tag="filter_running_btn",
                     callback=lambda: self._filter_executions("RUNNING"),
-                    width=80
+                    width=80,
                 )
                 dpg.add_button(
                     label="Completed",
                     tag="filter_completed_btn",
                     callback=lambda: self._filter_executions("COMPLETED"),
-                    width=80
+                    width=80,
                 )
                 dpg.add_button(
                     label="Failed",
                     tag="filter_failed_btn",
                     callback=lambda: self._filter_executions("FAILED"),
-                    width=80
+                    width=80,
                 )
                 dpg.add_input_text(
                     label="Search",
                     tag="log_search_input",
                     hint="Search logs...",
                     width=300,
-                    callback=lambda: self._search_logs()
+                    callback=lambda: self._search_logs(),
                 )
                 dpg.add_button(
                     label="Refresh",
                     tag="refresh_logs_btn",
                     callback=lambda: self._refresh_execution_logs(),
-                    width=80
+                    width=80,
                 )
 
             dpg.add_separator()
 
             # Execution logs container (scrollable)
-            with dpg.child_window(
-                tag="execution_logs_container",
-                height=-1,
-                border=True
-            ):
+            with dpg.child_window(tag="execution_logs_container", height=-1, border=True):
                 dpg.add_text(
                     "No executions yet. Execute a workflow to see logs here.",
                     tag="no_executions_text",
-                    color=(150, 150, 155)
+                    color=(150, 150, 155),
                 )
 
     def _filter_executions(self, filter_type: str) -> None:
         """Filter execution logs by status."""
         console.print(f"Filtering executions by: {filter_type}")
-        self._refresh_execution_logs(
-            status_filter=filter_type if filter_type != "ALL" else None
-        )
+        self._refresh_execution_logs(status_filter=filter_type if filter_type != "ALL" else None)
 
     def _search_logs(self) -> None:
         """Search execution logs."""
@@ -269,8 +259,6 @@ class LighthouseUI:
         Args:
             status_filter: Optional status filter (RUNNING, COMPLETED, FAILED)
         """
-        execution_manager = self.container.execution_manager
-
         # Clear existing log entries
         if dpg.does_item_exist("no_executions_text"):
             dpg.delete_item("no_executions_text")
@@ -282,49 +270,27 @@ class LighthouseUI:
                 if dpg.does_item_exist(child):
                     dpg.delete_item(child)
 
-        # Get execution history from execution manager
-        sessions = execution_manager.get_session_history()
+        # Get logger from container
+        logger = self.container.logger
+        if not logger:
+            dpg.add_text(
+                "Logging is disabled.",
+                parent="execution_logs_container",
+                tag="no_executions_text",
+                color=(150, 150, 155),
+            )
+            return
 
-        # Also include current running session if any
-        current_session = execution_manager.get_current_session()
-        all_sessions = []
-        if current_session:
-            all_sessions.append(current_session)
-        all_sessions.extend(sessions)
-
+        # Get execution history from file logger
         history = []
-        for s in all_sessions[:50]:
-            status_val = s.status.value if hasattr(s.status, 'value') else str(s.status)
+        if hasattr(logger, "get_execution_history"):
+            history = logger.get_execution_history(limit=50)
 
-            # Build node logs from node records
-            node_logs = []
-            for node_id, record in s.node_records.items():
-                record_status = record.status.value if hasattr(record.status, 'value') else str(record.status)
-                node_logs.append({
-                    "node_id": node_id,
-                    "node_name": record.node_name,
-                    "status": record_status,
-                    "duration_seconds": record.duration_seconds,
-                    "error_message": record.error,
-                    "outputs": record.outputs,
-                })
-
-            history.append({
-                "id": s.id,
-                "status": status_val,
-                "triggered_by": s.triggered_by,
-                "node_count": len(s.execution_order),
-                "nodes_executed": len([r for r in s.node_records.values()
-                                       if (r.status.value if hasattr(r.status, 'value') else str(r.status)) == "COMPLETED"]),
-                "nodes_failed": len([r for r in s.node_records.values()
-                                     if (r.status.value if hasattr(r.status, 'value') else str(r.status)) == "FAILED"]),
-                "duration_seconds": (
-                    (s.end_time - s.start_time).total_seconds()
-                    if s.end_time and s.start_time else None
-                ),
-                "node_logs": node_logs,
-                "log_directory": f".logs/{s.id}" if s.id else "",
-            })
+        # Also check current session metadata if exists
+        if hasattr(logger, "current_session") and logger.current_session:
+            # Add current running session to the top
+            current_data = logger.current_session.copy()
+            history.insert(0, current_data)
 
         # Filter by status if specified
         if status_filter:
@@ -335,7 +301,7 @@ class LighthouseUI:
                 "No executions found.",
                 parent="execution_logs_container",
                 tag="no_executions_text",
-                color=(150, 150, 155)
+                color=(150, 150, 155),
             )
             return
 
@@ -360,7 +326,7 @@ class LighthouseUI:
             "RUNNING": "[Running]",
             "COMPLETED": "[Done]",
             "FAILED": "[Failed]",
-            "CANCELLED": "[Cancelled]"
+            "CANCELLED": "[Cancelled]",
         }
         status_colors = {
             "PENDING": (150, 150, 150),
@@ -368,7 +334,7 @@ class LighthouseUI:
             "RUNNING": (194, 188, 81),
             "COMPLETED": (83, 202, 74),
             "FAILED": (202, 74, 74),
-            "CANCELLED": (150, 150, 150)
+            "CANCELLED": (150, 150, 150),
         }
 
         icon = status_icons.get(status, "[?]")
@@ -379,7 +345,7 @@ class LighthouseUI:
         if exec_data.get("duration_seconds"):
             duration = exec_data["duration_seconds"]
             if duration >= 60:
-                duration_str = f"{duration/60:.1f}m"
+                duration_str = f"{duration / 60:.1f}m"
             else:
                 duration_str = f"{duration:.1f}s"
 
@@ -388,22 +354,19 @@ class LighthouseUI:
             label=f"{icon} {exec_id} | {status} | {duration_str}",
             parent="execution_logs_container",
             tag=f"exec_tree_{exec_id}",
-            default_open=True if status == "RUNNING" else False
+            default_open=True if status == "RUNNING" else False,
         ):
             # Summary info
             dpg.add_text(
                 f"Triggered by: {exec_data.get('triggered_by', 'Unknown')[:8]}...",
-                color=(120, 180, 255)
+                color=(120, 180, 255),
             )
             dpg.add_text(
                 f"Nodes: {exec_data.get('nodes_executed', 0)}/{exec_data.get('node_count', 0)} executed",
-                color=(120, 180, 255)
+                color=(120, 180, 255),
             )
             if exec_data.get("nodes_failed", 0) > 0:
-                dpg.add_text(
-                    f"Failed: {exec_data['nodes_failed']} nodes",
-                    color=(202, 74, 74)
-                )
+                dpg.add_text(f"Failed: {exec_data['nodes_failed']} nodes", color=(202, 74, 74))
 
             dpg.add_separator()
 
@@ -432,7 +395,7 @@ class LighthouseUI:
                 dpg.add_button(
                     label="View Summary",
                     callback=make_summary_callback(exec_id, exec_data),
-                    width=120
+                    width=120,
                 )
 
                 # View errors button (only if there are failures)
@@ -440,16 +403,14 @@ class LighthouseUI:
                     dpg.add_button(
                         label="View Errors",
                         callback=make_errors_callback(exec_id, exec_data),
-                        width=120
+                        width=120,
                     )
 
                 # Open log directory button
                 log_dir = exec_data.get("log_directory", "")
                 if log_dir:
                     dpg.add_button(
-                        label="Open Logs Dir",
-                        callback=make_log_dir_callback(log_dir),
-                        width=120
+                        label="Open Logs Dir", callback=make_log_dir_callback(log_dir), width=120
                     )
 
     def _create_node_log_entry(self, exec_id: str, node_log: Dict[str, Any]) -> None:
@@ -465,12 +426,7 @@ class LighthouseUI:
         status = node_log.get("status", "UNKNOWN")
 
         # Status icon
-        status_icons = {
-            "PENDING": "[.]",
-            "RUNNING": "[>]",
-            "COMPLETED": "[+]",
-            "FAILED": "[X]"
-        }
+        status_icons = {"PENDING": "[.]", "RUNNING": "[>]", "COMPLETED": "[+]", "FAILED": "[X]"}
         icon = status_icons.get(status, "[?]")
 
         # Status color
@@ -491,15 +447,11 @@ class LighthouseUI:
         with dpg.tree_node(
             label=f"  {icon} {node_name} ({node_id[:8]}) | {duration_str}",
             tag=f"node_log_{exec_id}_{node_id}",
-            default_open=False
+            default_open=False,
         ):
             # Show error if present
             if node_log.get("error_message"):
-                dpg.add_text(
-                    f"Error: {node_log['error_message']}",
-                    color=(202, 74, 74),
-                    wrap=600
-                )
+                dpg.add_text(f"Error: {node_log['error_message']}", color=(202, 74, 74), wrap=600)
 
             # Show outputs preview if available
             outputs = node_log.get("outputs")
@@ -512,10 +464,11 @@ class LighthouseUI:
             # View details button - use closure to capture values
             def make_node_details_callback(eid: str, nlog: Dict[str, Any]):
                 return lambda: self._view_node_details(eid, nlog)
+
             dpg.add_button(
                 label="View Node Details",
                 callback=make_node_details_callback(exec_id, node_log),
-                width=150
+                width=150,
             )
 
     def _view_execution_summary(self, exec_id: str, exec_data: Dict[str, Any]) -> None:
@@ -541,7 +494,9 @@ class LighthouseUI:
             f"Nodes Executed: {exec_data.get('nodes_executed', 0)}",
             f"Nodes Failed: {exec_data.get('nodes_failed', 0)}",
             f"",
-            f"Duration: {exec_data.get('duration_seconds', 0):.2f}s" if exec_data.get('duration_seconds') else "Duration: Running...",
+            f"Duration: {exec_data.get('duration_seconds', 0):.2f}s"
+            if exec_data.get("duration_seconds")
+            else "Duration: Running...",
             f"",
             "=" * 50,
             "Node Execution Details:",
@@ -552,7 +507,9 @@ class LighthouseUI:
             status = node_log.get("status", "UNKNOWN")
             duration = node_log.get("duration_seconds", 0)
             lines.append(f"")
-            lines.append(f"Node: {node_log.get('node_name', 'Unknown')} ({node_log.get('node_id', '')[:8]})")
+            lines.append(
+                f"Node: {node_log.get('node_name', 'Unknown')} ({node_log.get('node_id', '')[:8]})"
+            )
             lines.append(f"  Status: {status}")
             lines.append(f"  Duration: {duration:.2f}s" if duration else "  Duration: -")
             if node_log.get("error_message"):
@@ -567,20 +524,12 @@ class LighthouseUI:
             show=True,
             width=700,
             height=500,
-            pos=[200, 100]
+            pos=[200, 100],
         ):
             dpg.add_input_text(
-                default_value=content,
-                multiline=True,
-                readonly=True,
-                width=-1,
-                height=-50
+                default_value=content, multiline=True, readonly=True, width=-1, height=-50
             )
-            dpg.add_button(
-                label="Close",
-                callback=lambda: dpg.delete_item(viewer_tag),
-                width=-1
-            )
+            dpg.add_button(label="Close", callback=lambda: dpg.delete_item(viewer_tag), width=-1)
 
     def _view_execution_errors(self, exec_id: str, exec_data: Dict[str, Any]) -> None:
         """
@@ -605,7 +554,9 @@ class LighthouseUI:
         for node_log in exec_data.get("node_logs", []):
             if node_log.get("error_message"):
                 lines.append(f"")
-                lines.append(f"Node: {node_log.get('node_name', 'Unknown')} ({node_log.get('node_id', '')[:8]})")
+                lines.append(
+                    f"Node: {node_log.get('node_name', 'Unknown')} ({node_log.get('node_id', '')[:8]})"
+                )
                 lines.append(f"Error: {node_log['error_message']}")
                 lines.append("-" * 30)
 
@@ -622,20 +573,12 @@ class LighthouseUI:
             show=True,
             width=700,
             height=400,
-            pos=[250, 150]
+            pos=[250, 150],
         ):
             dpg.add_input_text(
-                default_value=content,
-                multiline=True,
-                readonly=True,
-                width=-1,
-                height=-50
+                default_value=content, multiline=True, readonly=True, width=-1, height=-50
             )
-            dpg.add_button(
-                label="Close",
-                callback=lambda: dpg.delete_item(viewer_tag),
-                width=-1
-            )
+            dpg.add_button(label="Close", callback=lambda: dpg.delete_item(viewer_tag), width=-1)
 
     def _view_node_details(self, exec_id: str, node_log: Dict[str, Any]) -> None:
         """
@@ -653,6 +596,7 @@ class LighthouseUI:
 
         # Build details content
         import json
+
         lines = [
             f"Node Execution Details",
             f"",
@@ -660,7 +604,9 @@ class LighthouseUI:
             f"Node ID: {node_id}",
             f"Node Name: {node_log.get('node_name', 'Unknown')}",
             f"Status: {node_log.get('status', 'UNKNOWN')}",
-            f"Duration: {node_log.get('duration_seconds', 0):.2f}s" if node_log.get('duration_seconds') else "Duration: -",
+            f"Duration: {node_log.get('duration_seconds', 0):.2f}s"
+            if node_log.get("duration_seconds")
+            else "Duration: -",
             f"",
         ]
 
@@ -688,20 +634,12 @@ class LighthouseUI:
             show=True,
             width=600,
             height=450,
-            pos=[300, 120]
+            pos=[300, 120],
         ):
             dpg.add_input_text(
-                default_value=content,
-                multiline=True,
-                readonly=True,
-                width=-1,
-                height=-50
+                default_value=content, multiline=True, readonly=True, width=-1, height=-50
             )
-            dpg.add_button(
-                label="Close",
-                callback=lambda: dpg.delete_item(viewer_tag),
-                width=-1
-            )
+            dpg.add_button(label="Close", callback=lambda: dpg.delete_item(viewer_tag), width=-1)
 
     def _view_log_file(self, exec_id: str, filename: str) -> None:
         """
@@ -733,20 +671,12 @@ class LighthouseUI:
             show=True,
             width=800,
             height=600,
-            pos=[200, 100]
+            pos=[200, 100],
         ):
             dpg.add_input_text(
-                default_value=content,
-                multiline=True,
-                readonly=True,
-                width=-1,
-                height=-50
+                default_value=content, multiline=True, readonly=True, width=-1, height=-50
             )
-            dpg.add_button(
-                label="Close",
-                callback=lambda: dpg.delete_item(viewer_tag),
-                width=-1
-            )
+            dpg.add_button(label="Close", callback=lambda: dpg.delete_item(viewer_tag), width=-1)
 
     def _open_log_directory(self, log_dir: str) -> None:
         """
@@ -769,8 +699,7 @@ class LighthouseUI:
         """Setup input handlers."""
         with dpg.handler_registry():
             dpg.add_mouse_click_handler(
-                button=dpg.mvMouseButton_Right,
-                callback=self._on_right_click
+                button=dpg.mvMouseButton_Right, callback=self._on_right_click
             )
 
     def _on_right_click(self, sender, app_data) -> None:
@@ -822,10 +751,7 @@ class LighthouseUI:
 
         # Create visual link
         dpg.add_node_link(
-            source_attr,
-            target_attr,
-            parent=sender,
-            tag=f"{source_attr}_{target_attr}"
+            source_attr, target_attr, parent=sender, tag=f"{source_attr}_{target_attr}"
         )
 
         # Update connections
@@ -851,18 +777,13 @@ class LighthouseUI:
 
         # Remove from connections
         if target_id in self.connections:
-            self.connections[target_id] = [
-                i for i in self.connections[target_id] if i != source_id
-            ]
+            self.connections[target_id] = [i for i in self.connections[target_id] if i != source_id]
 
         # Remove from workflow
         self.workflow.remove_connection(source_id, target_id)
 
         # Remove edge tracking
-        self.edges = [
-            e for e in self.edges
-            if not (e[0] == source_full and e[1] == target_full)
-        ]
+        self.edges = [e for e in self.edges if not (e[0] == source_full and e[1] == target_full)]
 
         dpg.delete_item(app_data)
 
@@ -1013,9 +934,12 @@ class LighthouseUI:
         # Log node start
         execution_manager = self.container.execution_manager
         try:
-            execution_manager.log_node_start(node_id, node.name)
+            execution_manager.log_node_start(node_id, node.name, node_type=node.__class__.__name__)
         except RuntimeError:
             pass  # No active session
+
+        # Refresh logs to show node started
+        self._refresh_execution_logs()
 
         try:
             # Get expression service for resolving expressions
@@ -1045,11 +969,7 @@ class LighthouseUI:
 
                 # Log node success
                 try:
-                    execution_manager.log_node_end(
-                        node_id,
-                        "COMPLETED",
-                        output_data=result.data
-                    )
+                    execution_manager.log_node_end(node_id, "COMPLETED", output_data=result.data)
                     execution_manager.set_node_context(node_id, node.name, result.data)
                 except (RuntimeError, KeyError):
                     pass
@@ -1059,11 +979,7 @@ class LighthouseUI:
 
                 # Log node failure
                 try:
-                    execution_manager.log_node_end(
-                        node_id,
-                        "FAILED",
-                        error_message=result.error
-                    )
+                    execution_manager.log_node_end(node_id, "FAILED", error_message=result.error)
                 except (RuntimeError, KeyError):
                     pass
 
@@ -1073,11 +989,7 @@ class LighthouseUI:
 
             # Log node failure
             try:
-                execution_manager.log_node_end(
-                    node_id,
-                    "FAILED",
-                    error_message=str(e)
-                )
+                execution_manager.log_node_end(node_id, "FAILED", error_message=str(e))
             except (RuntimeError, KeyError):
                 pass
 
@@ -1123,9 +1035,7 @@ class LighthouseUI:
                             f"[yellow]Warning: Could not get output from {node.name}: {e}[/yellow]"
                         )
 
-        console.print(
-            f"[cyan]Context built with {len(self.node_last_outputs)} nodes[/cyan]"
-        )
+        console.print(f"[cyan]Context built with {len(self.node_last_outputs)} nodes[/cyan]")
 
     def _exec_graph(self, trigger_node_id: str) -> None:
         """Execute the workflow graph starting from a trigger node."""
@@ -1137,9 +1047,12 @@ class LighthouseUI:
             workflow_id=self.workflow.id,
             workflow_name=self.workflow.name,
             triggered_by=trigger_node_id,
-            execution_order=execution_order
+            execution_order=execution_order,
         )
         self.container.execution_manager.start_session()
+
+        # Refresh logs to show execution started
+        self._refresh_execution_logs()
 
         # Build context from completed nodes
         self._build_context_from_completed_nodes(execution_order)

@@ -115,3 +115,18 @@ class ILogger(Protocol):
             Path to log directory
         """
         ...
+
+    def get_execution_history(
+        self, limit: Optional[int] = None, status_filter: Optional[str] = None
+    ) -> list[Dict[str, Any]]:
+        """
+        Retrieve execution history with optional filtering.
+
+        Args:
+            limit: Maximum number of executions to return
+            status_filter: Filter by execution status
+
+        Returns:
+            List of execution metadata dictionaries
+        """
+        ...
