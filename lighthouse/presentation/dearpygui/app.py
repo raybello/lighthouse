@@ -303,6 +303,9 @@ class LighthouseUI:
         """Handle Don't Save button in unsaved changes dialog."""
         if dpg.does_item_exist("unsaved_dialog"):
             dpg.delete_item("unsaved_dialog")
+        self._clear_workflow()
+        self.current_file_path = None
+        self._mark_clean()
         # Proceed with whatever action triggered this
 
     def _handle_unsaved_cancel(self) -> None:
@@ -330,11 +333,13 @@ class LighthouseUI:
         for node_id in list(self.nodes.keys()):
             if dpg.does_item_exist(node_id):
                 dpg.delete_item(node_id)
-            # Also delete inspector and rename windows
-            if dpg.does_item_exist(f"inspector_{node_id}"):
-                dpg.delete_item(f"inspector_{node_id}")
-            if dpg.does_item_exist(f"rename_{node_id}"):
-                dpg.delete_item(f"rename_{node_id}")
+            # Also delete inspector and rename windows (use correct tag patterns)
+            inspector_tag = f"{node_id}_inspector"
+            if dpg.does_item_exist(inspector_tag):
+                dpg.delete_item(inspector_tag)
+            rename_tag = f"{node_id}_rename_popup"
+            if dpg.does_item_exist(rename_tag):
+                dpg.delete_item(rename_tag)
 
         # Clear state
         self.workflow = Workflow(id="main", name="Main Workflow")
@@ -380,6 +385,7 @@ class LighthouseUI:
             self._save_to_file(self.current_file_path)
         else:
             self._save_workflow_as()
+            self._mark_clean()
 
     def _save_workflow_as(self) -> None:
         """Save workflow to a new file (prompt for location)."""

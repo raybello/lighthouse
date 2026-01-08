@@ -216,6 +216,11 @@ class DearPyGuiNodeRenderer(INodeRenderer):
 
     def _create_inspector(self, node: BaseNode) -> None:
         """Create the inspector window for a node."""
+        # Delete existing inspector if it exists (important for workflow reloading)
+        inspector_tag = f"{node.id}_inspector"
+        if dpg.does_item_exist(inspector_tag):
+            dpg.delete_item(inspector_tag)
+
         # Check for custom inspector types (Input and Form nodes)
         if node.metadata.name == "Input":
             self._create_input_inspector(node)
@@ -461,6 +466,11 @@ class DearPyGuiNodeRenderer(INodeRenderer):
 
     def _create_rename_popup(self, node: BaseNode) -> None:
         """Create the rename popup for a node."""
+        # Delete existing rename popup if it exists (important for workflow reloading)
+        rename_popup_tag = f"{node.id}_rename_popup"
+        if dpg.does_item_exist(rename_popup_tag):
+            dpg.delete_item(rename_popup_tag)
+
         # Get initial position from stored node position
         initial_pos = self._node_positions.get(node.id, (100, 100))
 
