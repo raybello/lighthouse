@@ -2,8 +2,11 @@
 Execution manager for tracking execution sessions and state.
 
 Pure business logic with NO UI dependencies.
+Thread-safe for parallel execution support.
 """
 
+import threading
+import time
 import uuid
 from datetime import datetime
 from typing import Any, Dict, Optional
@@ -26,6 +29,8 @@ class ExecutionManager:
     - Building and maintaining node context
     - Managing execution lifecycle
     - Delegating logging to ILogger implementation
+
+    Thread-safe for parallel execution support.
     """
 
     def __init__(self, logger: Optional[ILogger] = None):
@@ -39,6 +44,11 @@ class ExecutionManager:
         self.session_history: list[ExecutionSession] = []
         self.node_context: Dict[str, Dict[str, Any]] = {}
         self.logger = logger
+        # Thread safety locks
+        self._context_lock = threading.Lock()
+        self._records_lock = threading.Lock()
+        # Session start time for relative timing
+        self._session_start_time: float = 0.0
 
     def create_session(
         self,
@@ -93,6 +103,7 @@ class ExecutionManager:
             raise RuntimeError("No active session to start")
 
         self.current_session.start()
+        self._session_start_time = time.time()
 
         # Start logging session
         if self.logger:
@@ -134,7 +145,9 @@ class ExecutionManager:
         self.session_history.append(self.current_session)
         self.current_session = None
 
-    def log_node_start(self, node_id: str, node_name: str, node_type: str = "Unknown") -> None:
+    def log_node_start(
+        self, node_id: str, node_name: str, node_type: str = "Unknown", level: int = 0
+    ) -> None:
         """
         Log the start of a node execution.
 
@@ -142,18 +155,27 @@ class ExecutionManager:
             node_id: Node ID
             node_name: Node name
             node_type: Node type/class
+            level: Execution level (for parallel execution profiling)
         """
         if not self.current_session:
             raise RuntimeError("No active session for logging")
+
+        current_time = time.time()
+        relative_start = current_time - self._session_start_time
 
         record = NodeExecutionRecord(
             node_id=node_id,
             node_name=node_name,
             status=ExecutionStatus.RUNNING,
             start_time=datetime.now(),
+            thread_id=threading.current_thread().name,
+            level=level,
+            relative_start_seconds=relative_start,
+            node_type=node_type,
         )
 
-        self.current_session.add_node_record(record)
+        with self._records_lock:
+            self.current_session.add_node_record(record)
 
         # Log to file if logger is available
         if self.logger:
@@ -183,27 +205,31 @@ class ExecutionManager:
         if not self.current_session:
             raise RuntimeError("No active session for logging")
 
-        record = self.current_session.get_node_record(node_id)
-        if not record:
-            raise KeyError(f"No record found for node {node_id}")
+        with self._records_lock:
+            record = self.current_session.get_node_record(node_id)
+            if not record:
+                raise KeyError(f"No record found for node {node_id}")
 
-        # Update record
-        record.end_time = datetime.now()
-        if record.start_time:
-            record.duration_seconds = (record.end_time - record.start_time).total_seconds()
+            # Update record
+            record.end_time = datetime.now()
+            current_time = time.time()
+            record.relative_end_seconds = current_time - self._session_start_time
 
-        # Map status strings to ExecutionStatus
-        if status in ("SUCCESS", "COMPLETED"):
-            record.status = ExecutionStatus.COMPLETED
-        elif status in ("ERROR", "FAILED"):
-            record.status = ExecutionStatus.FAILED
-        else:
-            record.status = ExecutionStatus.FAILED
+            if record.start_time:
+                record.duration_seconds = (record.end_time - record.start_time).total_seconds()
 
-        if output_data:
-            record.outputs = output_data
-        if error_message:
-            record.error = error_message
+            # Map status strings to ExecutionStatus
+            if status in ("SUCCESS", "COMPLETED"):
+                record.status = ExecutionStatus.COMPLETED
+            elif status in ("ERROR", "FAILED"):
+                record.status = ExecutionStatus.FAILED
+            else:
+                record.status = ExecutionStatus.FAILED
+
+            if output_data:
+                record.outputs = output_data
+            if error_message:
+                record.error = error_message
 
         # Log to file if logger is available
         if self.logger:
@@ -221,27 +247,34 @@ class ExecutionManager:
         """
         Store node output in context for expression evaluation.
 
+        Thread-safe for parallel execution.
+
         Args:
             node_id: Node ID
             node_name: Node name
             output_data: Node output data
         """
-        # Store by both ID and name for flexible referencing
-        self.node_context[node_id] = {"data": output_data}
-        self.node_context[node_name] = {"data": output_data}
+        with self._context_lock:
+            # Store by both ID and name for flexible referencing
+            self.node_context[node_id] = {"data": output_data}
+            self.node_context[node_name] = {"data": output_data}
 
     def get_node_context(self) -> Dict[str, Dict[str, Any]]:
         """
         Get the current node context.
 
+        Thread-safe for parallel execution.
+
         Returns:
             Node context dictionary
         """
-        return self.node_context.copy()
+        with self._context_lock:
+            return self.node_context.copy()
 
     def clear_context(self) -> None:
         """Clear the node context."""
-        self.node_context = {}
+        with self._context_lock:
+            self.node_context = {}
 
     def get_execution_trace(self, node_id: str) -> Optional[NodeExecutionRecord]:
         """
@@ -301,3 +334,55 @@ class ExecutionManager:
         self.logger.log_to_node(
             execution_id=self.current_session.id, node_id=node_id, level=level, message=message
         )
+
+    def get_profiling_data(self) -> Dict[str, Any]:
+        """
+        Get profiling data for the current or last completed session.
+
+        Returns:
+            Dictionary containing execution statistics and traces
+        """
+        session = self.current_session
+        if not session and self.session_history:
+            session = self.session_history[-1]
+
+        if not session:
+            return {"error": "No session data available"}
+
+        traces = []
+        level_times: Dict[int, float] = {}
+
+        with self._records_lock:
+            for record in session.node_records.values():
+                traces.append(
+                    {
+                        "node_id": record.node_id,
+                        "node_name": record.node_name,
+                        "node_type": record.node_type,
+                        "thread_id": record.thread_id,
+                        "level": record.level,
+                        "start_time": record.relative_start_seconds,
+                        "end_time": record.relative_end_seconds,
+                        "duration": record.duration_seconds,
+                        "success": record.status == ExecutionStatus.COMPLETED,
+                        "error": record.error,
+                    }
+                )
+                # Track max end time per level
+                if record.level not in level_times:
+                    level_times[record.level] = 0.0
+                level_times[record.level] = max(
+                    level_times[record.level], record.relative_end_seconds
+                )
+
+        return {
+            "session_id": session.id,
+            "workflow_name": session.workflow_name,
+            "status": session.status.value,
+            "total_duration": session.get_duration_seconds(),
+            "total_nodes": len(session.node_records),
+            "completed_nodes": session.get_completed_nodes_count(),
+            "failed_nodes": session.get_failed_nodes_count(),
+            "traces": traces,
+            "levels": len(level_times),
+        }

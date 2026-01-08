@@ -8,9 +8,11 @@ from dataclasses import dataclass
 from typing import Optional
 
 from lighthouse.application.services.execution_manager import ExecutionManager
+from lighthouse.application.services.execution_profiler import ExecutionProfiler
 from lighthouse.application.services.node_factory import NodeFactory
 from lighthouse.application.services.workflow_file_service import WorkflowFileService
 from lighthouse.application.services.workflow_orchestrator import WorkflowOrchestrator
+from lighthouse.domain.models.execution import ExecutionConfig
 from lighthouse.domain.protocols.logger_protocol import ILogger
 from lighthouse.domain.services.context_builder import ContextBuilder
 from lighthouse.domain.services.expression_service import ExpressionService
@@ -41,6 +43,10 @@ class ServiceContainer:
     execution_manager: ExecutionManager
     workflow_orchestrator: WorkflowOrchestrator
     workflow_file_service: WorkflowFileService
+    execution_profiler: ExecutionProfiler
+
+    # Configuration
+    execution_config: ExecutionConfig
 
     # Infrastructure services
     logger: Optional[ILogger] = None
@@ -51,6 +57,7 @@ def create_container(
     registry: Optional[NodeRegistry] = None,
     enable_logging: bool = True,
     logs_dir: str = ".logs",
+    execution_config: Optional[ExecutionConfig] = None,
 ) -> ServiceContainer:
     """
     Create and wire the service container.
@@ -60,10 +67,14 @@ def create_container(
         registry: Optional custom node registry (uses global if None)
         enable_logging: Whether to enable file logging (default: True)
         logs_dir: Directory for log files (default: .logs)
+        execution_config: Optional execution config for parallel execution
 
     Returns:
         Fully wired ServiceContainer
     """
+    # Execution config
+    config = execution_config or ExecutionConfig()
+
     # Domain services (stateless, no dependencies)
     expression_service = ExpressionService()
     topology_service = TopologyService()
@@ -85,7 +96,11 @@ def create_container(
         topology_service=topology_service,
         expression_service=expression_service,
         execution_manager=execution_manager,
+        execution_config=config,
     )
+
+    # Profiler
+    execution_profiler = ExecutionProfiler(execution_manager=execution_manager)
 
     # Workflow file service
     workflow_file_service = WorkflowFileService(
@@ -104,6 +119,8 @@ def create_container(
         execution_manager=execution_manager,
         workflow_orchestrator=workflow_orchestrator,
         workflow_file_service=workflow_file_service,
+        execution_profiler=execution_profiler,
+        execution_config=config,
         logger=logger,
     )
 

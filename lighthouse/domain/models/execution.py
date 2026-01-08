@@ -1,5 +1,6 @@
 """Execution session domain models."""
 
+import multiprocessing
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
@@ -16,12 +17,30 @@ class ExecutionStatus(Enum):
     CANCELLED = "CANCELLED"
 
 
+class ExecutionMode(Enum):
+    """Execution mode for workflow execution."""
+
+    SEQUENTIAL = "sequential"  # Execute nodes one at a time (default)
+    PARALLEL = "parallel"  # Execute independent nodes in parallel using threads
+
+
+@dataclass
+class ExecutionConfig:
+    """Configuration for workflow execution."""
+
+    mode: ExecutionMode = ExecutionMode.SEQUENTIAL
+    max_workers: int = field(default_factory=lambda: min(4, multiprocessing.cpu_count()))
+    enable_profiling: bool = True
+    fail_fast: bool = True  # Stop on first error vs collect all errors
+
+
 @dataclass
 class NodeExecutionRecord:
     """
     Record of a single node's execution within a session.
 
     Tracks inputs, outputs, duration, and status for a node execution.
+    Includes profiling fields for parallel execution analysis.
     """
 
     node_id: str
@@ -34,6 +53,12 @@ class NodeExecutionRecord:
     outputs: Dict[str, Any] = field(default_factory=dict)
     error: Optional[str] = None
     logs: List[str] = field(default_factory=list)
+    # Profiling fields for parallel execution
+    thread_id: Optional[str] = None
+    level: int = 0  # Execution level (nodes at same level can run in parallel)
+    relative_start_seconds: float = 0.0  # Start time relative to session start
+    relative_end_seconds: float = 0.0  # End time relative to session start
+    node_type: str = "Unknown"
 
     def to_dict(self) -> Dict[str, Any]:
         """Serialize to dictionary."""
@@ -48,6 +73,11 @@ class NodeExecutionRecord:
             "outputs": self.outputs,
             "error": self.error,
             "logs": self.logs,
+            "thread_id": self.thread_id,
+            "level": self.level,
+            "relative_start_seconds": self.relative_start_seconds,
+            "relative_end_seconds": self.relative_end_seconds,
+            "node_type": self.node_type,
         }
 
 
