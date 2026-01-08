@@ -5,6 +5,7 @@ Provides the visual node editor interface using the new architecture
 with dependency injection and clean separation of concerns.
 """
 
+import json
 import os
 import subprocess
 import sys
@@ -456,9 +457,17 @@ class LighthouseUI:
             # Show outputs preview if available
             outputs = node_log.get("outputs")
             if outputs:
-                output_preview = str(outputs)[:200]
-                if len(str(outputs)) > 200:
-                    output_preview += "..."
+                try:
+                    # Format as JSON with indentation
+                    outputs_str = json.dumps(outputs, indent=2)
+                    output_preview = outputs_str[:200]
+                    if len(outputs_str) > 200:
+                        output_preview += "..."
+                except Exception:
+                    # Fallback to string representation
+                    output_preview = str(outputs)[:200]
+                    if len(str(outputs)) > 200:
+                        output_preview += "..."
                 dpg.add_text(f"Output: {output_preview}", color=(100, 150, 200), wrap=600)
 
             # View details button - use closure to capture values
@@ -596,8 +605,6 @@ class LighthouseUI:
             dpg.delete_item(viewer_tag)
 
         # Build details content
-        import json
-
         lines = [
             "Node Execution Details",
             "",
