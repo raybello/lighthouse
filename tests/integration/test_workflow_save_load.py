@@ -41,9 +41,7 @@ class TestWorkflowSaveLoad:
         calc_node = factory.create_node("Calculator", name="DoubleValue")
 
         # Configure nodes
-        input_node.update_state(
-            {"properties": json.dumps([{"name": "value", "value": "10"}])}
-        )
+        input_node.update_state({"properties": json.dumps([{"name": "value", "value": "10"}])})
         calc_node.update_state(
             {
                 "field_a": '{{$node["UserInput"].data.value}}',
@@ -70,9 +68,7 @@ class TestWorkflowSaveLoad:
             assert filepath.exists()
 
             # Load from file
-            loaded_workflow, loaded_positions = workflow_service.load_from_file(
-                str(filepath)
-            )
+            loaded_workflow, loaded_positions = workflow_service.load_from_file(str(filepath))
 
             # Verify workflow metadata
             assert loaded_workflow.id == workflow.id
@@ -153,9 +149,7 @@ class TestWorkflowSaveLoad:
             filepath = Path(tmpdir) / "complex.lh"
 
             workflow_service.save_to_file(workflow, positions, str(filepath))
-            loaded_workflow, loaded_positions = workflow_service.load_from_file(
-                str(filepath)
-            )
+            loaded_workflow, loaded_positions = workflow_service.load_from_file(str(filepath))
 
             # Verify
             assert len(loaded_workflow.nodes) == 4

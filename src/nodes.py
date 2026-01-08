@@ -114,16 +114,16 @@ class InputNode(NodeBase):
             log_cb: Callback for logging during execution
         """
         super().__init__(name, parent, exec_cb, delete_cb, log_cb)
-        
+
         # Store input properties as a list of dicts
         self.input_properties = [
             {"property": "name", "value": "John"},
             {"property": "age", "value": "30"}
         ]
-        
+
         # Track validation errors
         self.validation_errors = []
-        
+
         # Define node fields (we'll store the properties as JSON internally)
         self.fields = {
             "input_properties_json": {
@@ -132,18 +132,18 @@ class InputNode(NodeBase):
                 "label": "Input Properties (Internal)",
             },
         }
-        
+
         # Initialize the node UI and configuration
         self.node_ui(has_inputs=False)
         self.node_configure()
         # Override the default inspector setup
         self.setup_input_inspector()
-    
+
     def _properties_to_json(self) -> str:
         """Convert input properties list to JSON string."""
         import json
         return json.dumps(self.input_properties)
-    
+
     def _json_to_properties(self, json_str: str) -> None:
         """Parse JSON string to input properties list."""
         import json
@@ -151,7 +151,7 @@ class InputNode(NodeBase):
             self.input_properties = json.loads(json_str)
         except:
             self.input_properties = []
-    
+
     def setup_input_inspector(self) -> None:
         """
         Create a custom inspector window for the input node with dynamic property management.
@@ -171,7 +171,7 @@ class InputNode(NodeBase):
             dpg.add_text("Define properties that will be available as data", color=(150, 150, 155))
             dpg.add_separator()
             dpg.add_spacer(height=5)
-            
+
             # Scrollable container for properties
             with dpg.child_window(
                 tag=f"{self.id}_properties_container",
@@ -179,9 +179,9 @@ class InputNode(NodeBase):
                 border=True
             ):
                 self._render_properties()
-            
+
             dpg.add_spacer(height=5)
-            
+
             # Add property button
             dpg.add_button(
                 label="+ Add Property",
@@ -189,9 +189,9 @@ class InputNode(NodeBase):
                 width=580,
                 tag=f"{self.id}_add_property_btn"
             )
-            
+
             dpg.add_spacer(height=5)
-            
+
             # Validation errors display
             dpg.add_text(
                 "",
@@ -199,7 +199,7 @@ class InputNode(NodeBase):
                 color=(255, 100, 100),
                 wrap=580
             )
-            
+
             # Footer buttons
             dpg.add_separator()
             with dpg.group(horizontal=True):
@@ -207,7 +207,7 @@ class InputNode(NodeBase):
                 dpg.add_button(
                     label="Cancel", callback=lambda: self.close_inspector(), width=280
                 )
-        
+
         # Also setup the rename popup
         with dpg.window(
             label=f"{self.name} Rename",
@@ -228,7 +228,7 @@ class InputNode(NodeBase):
                 tag=f"{self.id}_rename_save_btn",
                 callback=lambda: self.close_rename_popup(),
             )
-    
+
     def _render_properties(self) -> None:
         """Render all input properties in the inspector."""
         # Clear existing properties
@@ -237,21 +237,21 @@ class InputNode(NodeBase):
             for child in children:
                 if dpg.does_item_exist(child):
                     dpg.delete_item(child)
-        
+
         # Render each property
         for i, prop in enumerate(self.input_properties):
             self._render_property(i, prop)
-    
+
     def _render_property(self, index: int, prop: Dict[str, str]) -> None:
         """
         Render a single property row.
-        
+
         Args:
             index: Index of the property in the input_properties list
             prop: Property dictionary with property name and value
         """
         property_group_tag = f"{self.id}_property_{index}"
-        
+
         with dpg.group(
             tag=property_group_tag,
             parent=f"{self.id}_properties_container",
@@ -267,7 +267,7 @@ class InputNode(NodeBase):
                     tag=f"{self.id}_property_{index}_name",
                     label=""
                 )
-                
+
                 # Property value input
                 dpg.add_input_text(
                     default_value=prop.get("value", ""),
@@ -276,7 +276,7 @@ class InputNode(NodeBase):
                     tag=f"{self.id}_property_{index}_value",
                     label=""
                 )
-                
+
                 # Delete button
                 dpg.add_button(
                     label="X",
@@ -285,40 +285,40 @@ class InputNode(NodeBase):
                     width=30,
                     tag=f"{self.id}_property_{index}_delete"
                 )
-            
+
             dpg.add_spacer(height=5)
-    
+
     def _add_property(self) -> None:
         """Add a new property to the input."""
         self.input_properties.append({"property": "", "value": ""})
         self._render_properties()
-    
+
     def _delete_property(self, index: int) -> None:
         """
         Delete a property from the input.
-        
+
         Args:
             index: Index of the property to delete
         """
         if 0 <= index < len(self.input_properties):
             self.input_properties.pop(index)
             self._render_properties()
-    
+
     def _validate_properties(self) -> List[str]:
         """
         Validate all input properties.
-        
+
         Returns:
             List of validation error messages
         """
         errors = []
         property_names = set()
-        
+
         for i, prop in enumerate(self.input_properties):
             # Get current values from UI
             prop_name = dpg.get_value(f"{self.id}_property_{i}_name").strip()
             prop_value = dpg.get_value(f"{self.id}_property_{i}_value")
-            
+
             # Validate property name
             if not prop_name:
                 errors.append(f"Property {i+1}: Property name is required")
@@ -328,11 +328,11 @@ class InputNode(NodeBase):
                 errors.append(f"Property {i+1}: Duplicate property name '{prop_name}'")
             else:
                 property_names.add(prop_name)
-            
+
             # Value can be anything (no validation needed for input data)
-        
+
         return errors
-    
+
     def save(self) -> None:
         """
         Save changes from inspector inputs back to node state with validation.
@@ -345,13 +345,13 @@ class InputNode(NodeBase):
                 "value": dpg.get_value(f"{self.id}_property_{i}_value")
             }
             updated_properties.append(property_data)
-        
+
         # Update input properties
         self.input_properties = updated_properties
-        
+
         # Validate properties
         errors = self._validate_properties()
-        
+
         if errors:
             # Show validation errors
             error_text = "Validation Errors:\n" + "\n".join(errors)
@@ -360,14 +360,14 @@ class InputNode(NodeBase):
             for error in errors:
                 console.print(f"  [red]- {error}[/red]")
             return
-        
+
         # Clear validation errors
         dpg.set_value(f"{self.id}_validation_errors", "")
         self.validation_errors = []
-        
+
         # Update state
         self.state["input_properties_json"] = self._properties_to_json()
-        
+
         # Update the status display on the node
         property_count = len(self.input_properties)
         if property_count > 0:
@@ -378,14 +378,14 @@ class InputNode(NodeBase):
             status_text = "Input: No properties"
             dpg.set_value(f"{self.id}_state", value=status_text)
             dpg.configure_item(f"{self.id}_state", color=(86, 145, 193))
-        
+
         # Debug output
         console.print(f"[cyan]Saved input node: {self.id[-8:]}[/cyan]")
         console.print(f"  Properties: {self.input_properties}")
-        
+
         # Close the inspector
         self.close_inspector()
-    
+
     def node_configure(self) -> None:
         """
         Initialize node state from field definitions.
@@ -393,51 +393,51 @@ class InputNode(NodeBase):
         """
         # Create state dictionary from field values
         state = {key: field["value"] for key, field in self.fields.items()}
-        
+
         # Preserve existing input connection if present
         if "input" in self.state:
             state["input"] = self.state["input"]
         else:
             state["input"] = []
-        
+
         self.state = state
-        
+
         # Load input properties from state if available
         if "input_properties_json" in self.state:
             self._json_to_properties(self.state["input_properties_json"])
-        
+
         # Debug output
         console.print(f"[green]Configured node: {self.name}[/green]")
         console.print(f"  Input properties: {len(self.input_properties)} property(ies)")
-    
+
     def execute(self) -> Dict[str, Any]:
         """
         Execute the input node - build and return the data object from properties.
-        
+
         Returns:
             Dictionary with input data
         """
         try:
             # Parse the input properties
             self._json_to_properties(self.state.get("input_properties_json", "[]"))
-            
+
             # Validate before execution
             if not self.input_properties:
                 # Update node status to show error
                 dpg.set_value(f"{self.id}_state", value="Input: No properties defined")
                 dpg.configure_item(f"{self.id}_state", color=(255, 100, 100))
                 return {"data": {}}
-            
+
             # Build the output data from properties
             output_data = {}
-            
+
             for prop in self.input_properties:
                 prop_name = prop.get("property", "")
                 prop_value = prop.get("value", "")
-                
+
                 if not prop_name:
                     continue
-                
+
                 # Try to infer the type from the value
                 # If it looks like a number, convert it
                 if prop_value.isdigit():
@@ -456,15 +456,15 @@ class InputNode(NodeBase):
                 else:
                     # Default to string
                     output_data[prop_name] = prop_value
-            
+
             console.print(f"[green]Input data: {output_data}[/green]")
-            
+
             # Update node status to success
             dpg.set_value(f"{self.id}_state", value=f"Input: {len(output_data)} property(ies)")
             dpg.configure_item(f"{self.id}_state", color=(86, 145, 193))
-            
+
             return {"data": output_data}
-        
+
         except Exception as e:
             console.print(f"[red]Input node error: {e}[/red]")
             # Update node status to show error
@@ -765,7 +765,7 @@ class CalculatorNode(NodeBase):
             log_cb: Callback for logging during execution
         """
         super().__init__(name, parent, exec_cb, delete_cb, log_cb)
-        
+
         # Define node fields
         self.fields = {
             "field_a": {
@@ -784,12 +784,12 @@ class CalculatorNode(NodeBase):
                 "label": "Operation",
             },
         }
-        
+
         # Initialize the node UI and configuration
         self.node_ui()
         self.node_configure()
         self.setup_node_inspector()
-    
+
     def save(self) -> None:
         """
         Save changes from inspector inputs back to node state.
@@ -798,22 +798,22 @@ class CalculatorNode(NodeBase):
         for field_key in self.fields.keys():
             input_tag = f"{self.id}_{field_key}"
             self.state[field_key] = dpg.get_value(item=input_tag)
-        
+
         # Update the status display on the node
         status_text = f"{self.state['field_a']} {self.state['operation']} {self.state['field_b']}"
         dpg.set_value(f"{self.id}_state", value=status_text)
-        
+
         # Debug output
         console.print(f"[cyan]Saved node: {self.id[-8:]}[/cyan]")
         console.print(f"  State: {self.state}")
-        
+
         # Close the inspector
         self.close_inspector()
-    
+
     def execute(self) -> Dict[str, Any]:
         """
         Execute the calculation.
-        
+
         Returns:
             Dictionary with calculation result: {"data": {"result": value}}
         """
@@ -822,19 +822,19 @@ class CalculatorNode(NodeBase):
             field_a_raw = self.state.get("field_a", "0")
             field_b_raw = self.state.get("field_b", "0")
             operation = self.state.get("operation", "+")
-            
+
             # Convert to numbers - if they're already numbers, use them directly
             # If they're strings, try to parse them
             if isinstance(field_a_raw, str):
                 field_a = float(field_a_raw) if '.' in field_a_raw else int(field_a_raw)
             else:
                 field_a = field_a_raw
-            
+
             if isinstance(field_b_raw, str):
                 field_b = float(field_b_raw) if '.' in field_b_raw else int(field_b_raw)
             else:
                 field_b = field_b_raw
-            
+
             # Perform the calculation
             if operation == "+":
                 result = field_a + field_b
@@ -848,11 +848,11 @@ class CalculatorNode(NodeBase):
                 result = field_a % field_b if field_b != 0 else 0
             else:
                 result = 0
-            
+
             console.print(f"[green]Calculator: {field_a} {operation} {field_b} = {result}[/green]")
-            
+
             return {"data": {"result": result}}
-        
+
         except Exception as e:
             console.print(f"[red]Calculator error: {e}[/red]")
             return {"data": {"result": 0, "error": str(e)}}
@@ -878,17 +878,17 @@ class FormNode(NodeBase):
             log_cb: Callback for logging during execution
         """
         super().__init__(name, parent, exec_cb, delete_cb, log_cb)
-        
+
         # Store form fields as a list of dicts
         self.form_fields = [
             {"name": "fullName", "type": "string", "value": ""},
             {"name": "age", "type": "number", "value": "0"},
             {"name": "isActive", "type": "boolean", "value": "true"}
         ]
-        
+
         # Track validation errors
         self.validation_errors = []
-        
+
         # Define node fields (we'll store the form fields as JSON internally)
         self.fields = {
             "form_fields_json": {
@@ -897,18 +897,18 @@ class FormNode(NodeBase):
                 "label": "Form Fields (Internal)",
             },
         }
-        
+
         # Initialize the node UI and configuration
         self.node_ui()
         self.node_configure()
         # Override the default inspector setup
         self.setup_form_inspector()
-    
+
     def _fields_to_json(self) -> str:
         """Convert form fields list to JSON string."""
         import json
         return json.dumps(self.form_fields)
-    
+
     def _json_to_fields(self, json_str: str) -> None:
         """Parse JSON string to form fields list."""
         import json
@@ -916,7 +916,7 @@ class FormNode(NodeBase):
             self.form_fields = json.loads(json_str)
         except:
             self.form_fields = []
-    
+
     def setup_form_inspector(self) -> None:
         """
         Create a custom inspector window for the form node with dynamic field management.
@@ -935,7 +935,7 @@ class FormNode(NodeBase):
             dpg.add_text(f"{self.name} Configuration", color=(120, 180, 255))
             dpg.add_separator()
             dpg.add_spacer(height=5)
-            
+
             # Scrollable container for form fields
             with dpg.child_window(
                 tag=f"{self.id}_fields_container",
@@ -943,9 +943,9 @@ class FormNode(NodeBase):
                 border=True
             ):
                 self._render_form_fields()
-            
+
             dpg.add_spacer(height=5)
-            
+
             # Add field button
             dpg.add_button(
                 label="+ Add Field",
@@ -953,9 +953,9 @@ class FormNode(NodeBase):
                 width=580,
                 tag=f"{self.id}_add_field_btn"
             )
-            
+
             dpg.add_spacer(height=5)
-            
+
             # Validation errors display
             dpg.add_text(
                 "",
@@ -963,7 +963,7 @@ class FormNode(NodeBase):
                 color=(255, 100, 100),
                 wrap=580
             )
-            
+
             # Footer buttons
             dpg.add_separator()
             with dpg.group(horizontal=True):
@@ -971,7 +971,7 @@ class FormNode(NodeBase):
                 dpg.add_button(
                     label="Cancel", callback=lambda: self.close_inspector(), width=280
                 )
-        
+
         # Also setup the rename popup
         with dpg.window(
             label=f"{self.name} Rename",
@@ -992,7 +992,7 @@ class FormNode(NodeBase):
                 tag=f"{self.id}_rename_save_btn",
                 callback=lambda: self.close_rename_popup(),
             )
-    
+
     def _render_form_fields(self) -> None:
         """Render all form fields in the inspector."""
         # Clear existing fields
@@ -1001,21 +1001,21 @@ class FormNode(NodeBase):
             for child in children:
                 if dpg.does_item_exist(child):
                     dpg.delete_item(child)
-        
+
         # Render each field
         for i, field in enumerate(self.form_fields):
             self._render_field(i, field)
-    
+
     def _render_field(self, index: int, field: Dict[str, str]) -> None:
         """
         Render a single form field row.
-        
+
         Args:
             index: Index of the field in the form_fields list
             field: Field dictionary with name, type, value
         """
         field_group_tag = f"{self.id}_field_{index}"
-        
+
         with dpg.group(
             tag=field_group_tag,
             parent=f"{self.id}_fields_container",
@@ -1031,7 +1031,7 @@ class FormNode(NodeBase):
                     tag=f"{self.id}_field_{index}_name",
                     label=""
                 )
-                
+
                 # Field type dropdown
                 dpg.add_combo(
                     items=["string", "number", "boolean", "object"],
@@ -1040,7 +1040,7 @@ class FormNode(NodeBase):
                     tag=f"{self.id}_field_{index}_type",
                     label=""
                 )
-                
+
                 # Field value input
                 dpg.add_input_text(
                     default_value=field.get("value", ""),
@@ -1049,7 +1049,7 @@ class FormNode(NodeBase):
                     tag=f"{self.id}_field_{index}_value",
                     label=""
                 )
-                
+
                 # Delete button
                 dpg.add_button(
                     label="X",
@@ -1058,41 +1058,41 @@ class FormNode(NodeBase):
                     width=30,
                     tag=f"{self.id}_field_{index}_delete"
                 )
-            
+
             dpg.add_spacer(height=5)
-    
+
     def _add_field(self) -> None:
         """Add a new field to the form."""
         self.form_fields.append({"name": "", "type": "string", "value": ""})
         self._render_form_fields()
-    
+
     def _delete_field(self, index: int) -> None:
         """
         Delete a field from the form.
-        
+
         Args:
             index: Index of the field to delete
         """
         if 0 <= index < len(self.form_fields):
             self.form_fields.pop(index)
             self._render_form_fields()
-    
+
     def _validate_fields(self) -> List[str]:
         """
         Validate all form fields.
-        
+
         Returns:
             List of validation error messages
         """
         errors = []
         field_names = set()
-        
+
         for i, field in enumerate(self.form_fields):
             # Get current values from UI
             name = dpg.get_value(f"{self.id}_field_{i}_name").strip()
             field_type = dpg.get_value(f"{self.id}_field_{i}_type")
             value = dpg.get_value(f"{self.id}_field_{i}_value")
-            
+
             # Validate field name
             if not name:
                 errors.append(f"Field {i+1}: Field name is required")
@@ -1102,7 +1102,7 @@ class FormNode(NodeBase):
                 errors.append(f"Field {i+1}: Duplicate field name '{name}'")
             else:
                 field_names.add(name)
-            
+
             # Validate value based on type (only if not an expression)
             if value and not value.strip().startswith("{{"):
                 if field_type == "number":
@@ -1116,9 +1116,9 @@ class FormNode(NodeBase):
                 elif field_type == "object":
                     if not value.startswith("{") and not value.startswith("["):
                         errors.append(f"Field '{name}': Value must be valid JSON object/array or expression")
-        
+
         return errors
-    
+
     def save(self) -> None:
         """
         Save changes from inspector inputs back to node state with validation.
@@ -1132,13 +1132,13 @@ class FormNode(NodeBase):
                 "value": dpg.get_value(f"{self.id}_field_{i}_value")
             }
             updated_fields.append(field_data)
-        
+
         # Update form fields
         self.form_fields = updated_fields
-        
+
         # Validate fields
         errors = self._validate_fields()
-        
+
         if errors:
             # Show validation errors
             error_text = "Validation Errors:\n" + "\n".join(errors)
@@ -1147,14 +1147,14 @@ class FormNode(NodeBase):
             for error in errors:
                 console.print(f"  [red]- {error}[/red]")
             return
-        
+
         # Clear validation errors
         dpg.set_value(f"{self.id}_validation_errors", "")
         self.validation_errors = []
-        
+
         # Update state
         self.state["form_fields_json"] = self._fields_to_json()
-        
+
         # Update the status display on the node
         field_count = len(self.form_fields)
         if field_count > 0:
@@ -1165,14 +1165,14 @@ class FormNode(NodeBase):
             status_text = "Form: No fields"
             dpg.set_value(f"{self.id}_state", value=status_text)
             dpg.configure_item(f"{self.id}_state", color=(86, 145, 193))
-        
+
         # Debug output
         console.print(f"[cyan]Saved form node: {self.id[-8:]}[/cyan]")
         console.print(f"  Fields: {self.form_fields}")
-        
+
         # Close the inspector
         self.close_inspector()
-    
+
     def node_configure(self) -> None:
         """
         Initialize node state from field definitions.
@@ -1180,52 +1180,52 @@ class FormNode(NodeBase):
         """
         # Create state dictionary from field values
         state = {key: field["value"] for key, field in self.fields.items()}
-        
+
         # Preserve existing input connection if present
         if "input" in self.state:
             state["input"] = self.state["input"]
         else:
             state["input"] = []
-        
+
         self.state = state
-        
+
         # Load form fields from state if available
         if "form_fields_json" in self.state:
             self._json_to_fields(self.state["form_fields_json"])
-        
+
         # Debug output
         console.print(f"[green]Configured node: {self.name}[/green]")
         console.print(f"  Form fields: {len(self.form_fields)} field(s)")
-    
+
     def execute(self) -> Dict[str, Any]:
         """
         Execute the form node - evaluate all field expressions and return structured output.
-        
+
         Returns:
             Dictionary with form data: {"data": {field_name: evaluated_value, ...}}
         """
         try:
             # Parse the form fields
             self._json_to_fields(self.state.get("form_fields_json", "[]"))
-            
+
             # Validate before execution
             if not self.form_fields:
                 # Update node status to show error
                 dpg.set_value(f"{self.id}_state", value="Form: No fields defined")
                 dpg.configure_item(f"{self.id}_state", color=(255, 100, 100))
                 return {"data": {"error": "No fields defined"}}
-            
+
             # Build the output data
             output_data = {}
-            
+
             for field in self.form_fields:
                 field_name = field.get("name", "")
                 field_type = field.get("type", "string")
                 field_value = field.get("value", "")
-                
+
                 if not field_name:
                     continue
-                
+
                 # The value will be evaluated during execution (expressions resolved)
                 # For now, just pass through the raw values
                 if field_type == "string":
@@ -1245,15 +1245,15 @@ class FormNode(NodeBase):
                         output_data[field_name] = field_value
                 else:
                     output_data[field_name] = field_value
-            
+
             console.print(f"[green]Form output: {output_data}[/green]")
-            
+
             # Update node status to success (will be overridden by executor status)
             dpg.set_value(f"{self.id}_state", value=f"Form: {len(output_data)} field(s)")
             dpg.configure_item(f"{self.id}_state", color=(86, 145, 193))
-            
+
             return {"data": output_data}
-        
+
         except Exception as e:
             console.print(f"[red]Form error: {e}[/red]")
             # Update node status to show error

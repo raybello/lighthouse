@@ -43,18 +43,14 @@ class TestWorkflowFileService:
     @pytest.fixture
     def sample_workflow(self, node_factory):
         """Create a sample workflow with real nodes."""
-        workflow = Workflow(
-            id="test-workflow", name="Test Workflow", description="A test workflow"
-        )
+        workflow = Workflow(id="test-workflow", name="Test Workflow", description="A test workflow")
 
         # Create nodes using factory
         input_node = node_factory.create_node("Input", name="InputData")
         calc_node = node_factory.create_node("Calculator", name="Calculate")
 
         # Configure nodes
-        input_node.update_state(
-            {"properties": json.dumps([{"name": "age", "value": "30"}])}
-        )
+        input_node.update_state({"properties": json.dumps([{"name": "age", "value": "30"}])})
         calc_node.update_state(
             {"field_a": '{{$node["InputData"].data.age}}', "field_b": "2", "operation": "*"}
         )

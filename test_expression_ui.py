@@ -8,11 +8,12 @@ This test verifies that expressions like {{$node["Input"].data.value}} are:
 3. Preserved when workflows are loaded back
 """
 
+import json
+import os
+import tempfile
+
 from lighthouse.container import create_headless_container
 from lighthouse.domain.models.workflow import Workflow
-import json
-import tempfile
-import os
 
 
 def test_expression_preservation():
@@ -51,6 +52,7 @@ def test_expression_preservation():
     # Execute workflow
     print("\n🚀 Executing workflow...")
     result = container.workflow_orchestrator.execute_workflow(workflow, triggered_by=input_node.id)
+    print(result)
 
     # Check that expressions are preserved after execution
     print("\n✓ Checking state after execution...")
@@ -106,9 +108,9 @@ def test_expression_preservation():
     loaded_calc_expr = loaded_calc.state.get("expression", "")
 
     assert expression_url in loaded_http_url, f"Expression lost after load! Got: {loaded_http_url}"
-    assert expression_calc in loaded_calc_expr, (
-        f"Expression lost after load! Got: {loaded_calc_expr}"
-    )
+    assert (
+        expression_calc in loaded_calc_expr
+    ), f"Expression lost after load! Got: {loaded_calc_expr}"
 
     print(f"  ✓ HTTP URL after load: {loaded_http_url}")
     print(f"  ✓ Calc expr after load: {loaded_calc_expr}")

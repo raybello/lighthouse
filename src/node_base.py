@@ -368,7 +368,7 @@ class NodeBase(ABC):
 
         Must be implemented by subclasses to define the node's
         behavior when the Execute button is clicked.
-        
+
         Returns:
             Dictionary with node output data: {"data": {...}}
         """

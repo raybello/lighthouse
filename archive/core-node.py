@@ -1281,8 +1281,8 @@ class LighthouseApp:
         # for i, level in enumerate(result):
         #     node_names = [self.nodes[nid].name for nid in level]
         #     console.print(f"  Level {i}: {node_names}")
-            
-            
+
+
         while queue:
             current = queue.pop(0)
             result.append(current)

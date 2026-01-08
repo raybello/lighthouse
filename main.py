@@ -11,7 +11,6 @@ Version: 1.0.0
 
 from src.lighthouse import LighthouseApp
 
-
 if __name__ == "__main__":
     # Create and run the application
     app = LighthouseApp()

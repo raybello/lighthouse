@@ -1,5 +1,5 @@
 ``` mermaid
-sequenceDiagram 
+sequenceDiagram
     autonumber
 
     User->>NodeEditor: Create Node ❌
@@ -12,7 +12,7 @@ sequenceDiagram
     Note over NodeEditor,ExecEngine: Iterate over nodes <br/>after Topological Sort
 
 
-    loop NodeInputs Ready 
+    loop NodeInputs Ready
         ExecEngine->>ExecEngine: Execute node function ❌
     end
 
@@ -34,6 +34,3 @@ sequenceDiagram
 ❌- call execute() on node after state has been seeded, add return value of execute() to output item of current node
 ❌- propagate output items to all children nodes
 ❌- execute next node until completed
-
-
-

@@ -353,7 +353,7 @@ class LighthouseApp:
     def _setup_execution_logs_ui(self) -> None:
         """
         Create the Execution Logs tab UI.
-        
+
         Displays execution history with hierarchical log display,
         real-time status updates, and log filtering capabilities.
         """
@@ -431,7 +431,7 @@ class LighthouseApp:
     def _refresh_execution_logs(self, status_filter: str = None) -> None:
         """
         Refresh the execution logs display.
-        
+
         Args:
             status_filter: Optional status filter (RUNNING, COMPLETED, FAILED)
         """
@@ -476,7 +476,7 @@ class LighthouseApp:
     def _create_execution_log_entry(self, exec_data: Dict[str, Any]) -> None:
         """
         Create a collapsible execution log entry.
-        
+
         Args:
             exec_data: Execution metadata dictionary
         """
@@ -565,7 +565,7 @@ class LighthouseApp:
     def _create_node_log_entry(self, exec_id: str, node_log: Dict[str, Any]) -> None:
         """
         Create a node log entry display.
-        
+
         Args:
             exec_id: Execution ID
             node_log: Node log metadata dictionary
@@ -604,7 +604,7 @@ class LighthouseApp:
     def _view_log_file(self, exec_id: str, filename: str) -> None:
         """
         View a log file in a modal window.
-        
+
         Args:
             exec_id: Execution ID
             filename: Name of the log file
@@ -646,7 +646,7 @@ class LighthouseApp:
     def _open_log_directory(self, log_dir: str) -> None:
         """
         Open the log directory in the system file explorer.
-        
+
         Args:
             log_dir: Path to the log directory
         """
@@ -937,10 +937,10 @@ class LighthouseApp:
     def _build_context_from_completed_nodes(self, execution_order):
         """
         Build the execution context from all completed nodes.
-        
+
         This ensures that expressions can reference outputs from nodes
         that were executed in previous runs.
-        
+
         Args:
             execution_order: List of node IDs in execution order
         """

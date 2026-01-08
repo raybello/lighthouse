@@ -456,7 +456,7 @@ class NodeFlowGUI:
                 attribute_type=dpg.mvNode_Attr_Output, tag=f"{node_tag}_output", shape=dpg.mvNode_PinShape_Triangle
             ):
                 dpg.add_text("Output ->")
-        
+
         with dpg.window(label="Delete Files", modal=True, popup=True, show=False, tag=f"{node_tag}modal_id", no_title_bar=True, pos=pos):
             dpg.add_text("All those beautiful files will be deleted.\nThis operation cannot be undone!")
             dpg.add_separator()
@@ -713,7 +713,7 @@ class NodeFlowGUI:
 
     def topological_sort(self) -> List[str]:
         """Perform topological sort to determine execution order"""
-        
+
         in_degree = {node_id: len(node.inputs) for node_id, node in self.nodes.items()}
         queue = [node_id for node_id, degree in in_degree.items() if degree == 0]
         result = []

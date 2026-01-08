@@ -6,7 +6,6 @@ Tests serialization and deserialization of workflows to/from JSON format.
 
 import pytest
 
-from lighthouse.domain.models.workflow import Workflow
 from lighthouse.domain.services.workflow_serializer import WorkflowSerializer
 
 
@@ -23,18 +22,14 @@ class TestWorkflowSerializer:
         """Create sample workflow data as dict."""
         return {
             "version": "1.0",
-            "workflow": {
-                "id": "test-workflow",
-                "name": "Test Workflow",
-                "description": "A test"
-            },
+            "workflow": {"id": "test-workflow", "name": "Test Workflow", "description": "A test"},
             "nodes": [
                 {
                     "id": "node1",
                     "name": "Input",
                     "node_type": "Input",
                     "state": {"properties": '[{"name":"age","value":"30"}]'},
-                    "position": {"x": 100.0, "y": 150.0}
+                    "position": {"x": 100.0, "y": 150.0},
                 },
                 {
                     "id": "node2",
@@ -43,14 +38,12 @@ class TestWorkflowSerializer:
                     "state": {
                         "field_a": '{{$node["Input"].data.age}}',
                         "field_b": "2",
-                        "operation": "*"
+                        "operation": "*",
                     },
-                    "position": {"x": 400.0, "y": 150.0}
-                }
+                    "position": {"x": 400.0, "y": 150.0},
+                },
             ],
-            "connections": [
-                {"from_node_id": "node1", "to_node_id": "node2"}
-            ]
+            "connections": [{"from_node_id": "node1", "to_node_id": "node2"}],
         }
 
     def test_deserialize_valid_data(self, serializer, sample_workflow_dict):
@@ -257,9 +250,7 @@ class TestWorkflowSerializer:
             "connections": [{"to_node_id": "node1"}],
         }
 
-        with pytest.raises(
-            ValueError, match="Connection missing required field: 'from_node_id'"
-        ):
+        with pytest.raises(ValueError, match="Connection missing required field: 'from_node_id'"):
             serializer.deserialize(data)
 
     def test_deserialize_missing_connection_to_node_id(self, serializer):
@@ -271,9 +262,7 @@ class TestWorkflowSerializer:
             "connections": [{"from_node_id": "node1"}],
         }
 
-        with pytest.raises(
-            ValueError, match="Connection missing required field: 'to_node_id'"
-        ):
+        with pytest.raises(ValueError, match="Connection missing required field: 'to_node_id'"):
             serializer.deserialize(data)
 
     def test_deserialize_default_positions(self, serializer):
@@ -281,9 +270,7 @@ class TestWorkflowSerializer:
         data = {
             "version": "1.0",
             "workflow": {"id": "test", "name": "Test"},
-            "nodes": [
-                {"id": "node1", "name": "Node", "node_type": "Input", "state": {}}
-            ],
+            "nodes": [{"id": "node1", "name": "Node", "node_type": "Input", "state": {}}],
             "connections": [],
         }
 

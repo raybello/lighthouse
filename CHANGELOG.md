@@ -27,7 +27,7 @@
 ## [1.0.12] - 2025-12-09
 
 ### Added
-- Adding missing py modules dearpygui & rich to gh-action 
+- Adding missing py modules dearpygui & rich to gh-action
 - Fixed MacOS executable segfault
 
 ### Changed

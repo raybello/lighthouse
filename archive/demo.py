@@ -57,10 +57,10 @@ def _add_config_options(item, columns, *names, **kwargs):
         for i in range((len(names)+(columns - 1))//columns):
             with dpg.table_row():
                 for j in range(columns):
-                    if (i*columns + j) >= len(names): 
+                    if (i*columns + j) >= len(names):
                         break
-                    dpg.add_checkbox(label=names[i*columns + j], 
-                                        callback=_config, user_data=item, 
+                    dpg.add_checkbox(label=names[i*columns + j],
+                                        callback=_config, user_data=item,
                                         default_value=dpg.get_item_configuration(item)[names[i*columns + j]])
         dpg.pop_container_stack()
 
@@ -79,7 +79,7 @@ def _hsv_to_rgb(h, s, v):
     if i == 5: return (255*v, 255*p, 255*q)
 
 def _create_static_textures():
-   
+
     ## create static textures
     texture_data1 = []
     for i in range(100*100):
@@ -124,7 +124,7 @@ def _create_static_textures():
     dpg.add_static_texture(100, 100, texture_data3, parent="__demo_texture_container", tag="__demo_static_texture_3", label="Static Texture 3")
 
 def _create_dynamic_textures():
-    
+
     ## create dynamic textures
     texture_data1 = []
     for i in range(100*100):
@@ -221,7 +221,7 @@ def show_demo():
     _create_dynamic_textures()
 
     with dpg.window(label="Dear PyGui Demo", width=800, height=800, on_close=_on_demo_close, pos=(100, 100), tag="__demo_id"):
-    
+
         with dpg.menu_bar():
 
             with dpg.menu(label="Menu"):
@@ -279,15 +279,15 @@ def show_demo():
 
         with dpg.collapsing_header(label="Window Options"):
 
-            _add_config_options("__demo_id", 3, 
-                                        "no_title_bar", "no_scrollbar", "menubar", 
+            _add_config_options("__demo_id", 3,
+                                        "no_title_bar", "no_scrollbar", "menubar",
                                         "no_move", "no_resize", "no_collapse",
                                         "no_close", "no_background", "no_bring_to_front_on_focus",
                                         "unsaved_document"
                                         )
-  
+
         with dpg.collapsing_header(label="Widgets"):
-        
+
             with dpg.tree_node(label="Basic"):
 
                 with dpg.group(horizontal=True):
@@ -297,7 +297,7 @@ def show_demo():
                     dpg.add_button(label="Button", callback=_log, arrow=True, direction=dpg.mvDir_Left)
                     dpg.add_button(label="Button", callback=_log, arrow=True, direction=dpg.mvDir_Right)
                     dpg.add_button(label="Button", callback=_log, arrow=True, direction=dpg.mvDir_Down)
-                    
+
                 dpg.add_button(label="Hold me button", callback=_log, repeat=True)
 
                 dpg.add_checkbox(label="checkbox", callback=_log)
@@ -441,14 +441,14 @@ def show_demo():
                         display_mode = dpg.mvColorEdit_hex
 
                     if user_data ==_color_picker_id:
-                        dpg.configure_item(user_data, 
-                                           picker_mode=picker_mode, 
+                        dpg.configure_item(user_data,
+                                           picker_mode=picker_mode,
                                            alpha_preview=alpha_preview,
                                            display_type=display_type,
                                            input_mode=input_mode
                                            )
                     else:
-                        dpg.configure_item(user_data, 
+                        dpg.configure_item(user_data,
                                            alpha_preview=alpha_preview,
                                            display_type=display_type,
                                            input_mode=input_mode,
@@ -456,31 +456,31 @@ def show_demo():
                                            )
 
                 dpg.add_text("Color Picker")
-                
+
                 with dpg.group(horizontal=True) as _before_id:
                     dpg.add_text("picker_mode:")
-                    dpg.add_radio_button(("mvColorPicker_bar", "mvColorPicker_wheel"), callback=_color_picker_configs, 
+                    dpg.add_radio_button(("mvColorPicker_bar", "mvColorPicker_wheel"), callback=_color_picker_configs,
                                          user_data=_color_picker_id, horizontal=True)
-                
+
                 with dpg.group(horizontal=True):
                     dpg.add_text("alpha_preview:")
-                    dpg.add_radio_button(("mvColorEdit_AlphaPreviewNone", "mvColorEdit_AlphaPreview", "mvColorEdit_AlphaPreviewHalf"), callback=_color_picker_configs, 
+                    dpg.add_radio_button(("mvColorEdit_AlphaPreviewNone", "mvColorEdit_AlphaPreview", "mvColorEdit_AlphaPreviewHalf"), callback=_color_picker_configs,
                                      user_data=_color_picker_id, horizontal=True)
 
                 with dpg.group(horizontal=True):
                     dpg.add_text("display_type:")
-                    dpg.add_radio_button(("mvColorEdit_uint8", "mvColorEdit_float"), callback=_color_picker_configs, 
+                    dpg.add_radio_button(("mvColorEdit_uint8", "mvColorEdit_float"), callback=_color_picker_configs,
                                          user_data=_color_picker_id, horizontal=True)
 
                 with dpg.group(horizontal=True):
                     dpg.add_text("input_mode:")
-                    dpg.add_radio_button(("mvColorEdit_input_rgb", "mvColorEdit_input_hsv"), callback=_color_picker_configs, 
+                    dpg.add_radio_button(("mvColorEdit_input_rgb", "mvColorEdit_input_hsv"), callback=_color_picker_configs,
                                          user_data=_color_picker_id, horizontal=True)
 
-                dpg.add_color_picker((255, 0, 255, 200), label="Color Picker", alpha_preview=True, no_alpha=False, alpha_bar=True, 
+                dpg.add_color_picker((255, 0, 255, 200), label="Color Picker", alpha_preview=True, no_alpha=False, alpha_bar=True,
                         width=200, tag=_color_picker_id)
 
-                _add_config_options(_color_picker_id, 3, 
+                _add_config_options(_color_picker_id, 3,
                                     "no_alpha", "no_side_preview", "display_rgb",
                                     "display_hsv", "display_hex",
                                     "no_small_preview", "no_inputs", "no_tooltip",
@@ -492,33 +492,33 @@ def show_demo():
 
                 with dpg.group(horizontal=True):
                     _before_id = dpg.add_text("alpha_preview:")
-                    dpg.add_radio_button(("mvColorEdit_AlphaPreviewNone", "mvColorEdit_AlphaPreview", "mvColorEdit_AlphaPreviewHalf"), callback=_color_picker_configs, 
+                    dpg.add_radio_button(("mvColorEdit_AlphaPreviewNone", "mvColorEdit_AlphaPreview", "mvColorEdit_AlphaPreviewHalf"), callback=_color_picker_configs,
                                          user_data=_color_edit_id, horizontal=True)
 
                 with dpg.group(horizontal=True):
                     dpg.add_text("display_type:")
-                    dpg.add_radio_button(("mvColorEdit_uint8", "mvColorEdit_float"), callback=_color_picker_configs, 
+                    dpg.add_radio_button(("mvColorEdit_uint8", "mvColorEdit_float"), callback=_color_picker_configs,
                                          user_data=_color_edit_id, horizontal=True)
 
                 with dpg.group(horizontal=True):
                     dpg.add_text("display_mode:")
-                    dpg.add_radio_button(("mvColorEdit_rgb", "mvColorEdit_hsv", "mvColorEdit_hex"), callback=_color_picker_configs, 
+                    dpg.add_radio_button(("mvColorEdit_rgb", "mvColorEdit_hsv", "mvColorEdit_hex"), callback=_color_picker_configs,
                                          user_data=_color_edit_id, horizontal=True)
 
                 with dpg.group(horizontal=True):
                     dpg.add_text("input_mode:")
-                    dpg.add_radio_button(("mvColorEdit_input_rgb", "mvColorEdit_input_hsv"), callback=_color_picker_configs, 
+                    dpg.add_radio_button(("mvColorEdit_input_rgb", "mvColorEdit_input_hsv"), callback=_color_picker_configs,
                                          user_data=_color_edit_id, horizontal=True)
 
-                dpg.add_color_edit((255, 0, 255, 255), label="Color Edit", 
+                dpg.add_color_edit((255, 0, 255, 255), label="Color Edit",
                         width=200, tag=_color_edit_id)
 
-                _add_config_options(_color_edit_id, 3, 
+                _add_config_options(_color_edit_id, 3,
                                     "no_alpha", "no_picker",
                                     "no_options", "no_inputs", "no_small_preview",
-                                    "no_tooltip", "no_label", 
+                                    "no_tooltip", "no_label",
                                     "no_drag_drop", "alpha_bar", before=_before_id)
-   
+
             with dpg.tree_node(label="Colormaps"):
                 dpg.add_text("Notes")
                 dpg.add_text("Colormaps belong to a mvColorMapRegistry.", bullet=True, indent=20)
@@ -553,9 +553,9 @@ def show_demo():
                 listbox_2 = dpg.add_listbox(items, label="listbox 2", width=200)
                 dpg.add_input_int(label="num_items",callback=_config, user_data=[listbox_1, listbox_2], before = listbox_1)
                 dpg.add_slider_int(label="width", default_value=200, callback=_config, user_data=listbox_2, before = listbox_1, max_value=500)
-        
+
             with dpg.tree_node(label="Selectables"):
-                
+
                 with dpg.tree_node(label="Basic"):
                     dpg.add_selectable(label="1. I am selectable")
                     dpg.add_text("2. I am not selectable")
@@ -583,7 +583,7 @@ def show_demo():
                 dpg.add_text("Bullet point 2\nbullet text can be\nOn multiple lines", bullet=True)
                 with dpg.tree_node(label="Tree node"):
                     dpg.add_text("Another bullet point", bullet=True)
-                
+
                 with dpg.group(horizontal=True):
                     dpg.add_text("1", bullet=True)
                     dpg.add_button(label="Button", small=True)
@@ -591,7 +591,7 @@ def show_demo():
             with dpg.tree_node(label="Text"):
 
                 with dpg.tree_node(label="Colored Text"):
-                
+
                     dpg.add_text("Pink", color=(255, 0, 255))
                     dpg.add_text("Yellow", color=(255, 255, 0))
 
@@ -601,7 +601,7 @@ def show_demo():
                     paragraph2 = 'The lazy dong is a good dog. This paragraph should fit within the child. Testing a 1 character word. The quick brown fox jumps over the lazy dog.'
 
                     dpg.add_text(paragraph1, wrap=0)
-                    widget_id = dpg.add_slider_int(label="wrap width", default_value=500, max_value=1000, 
+                    widget_id = dpg.add_slider_int(label="wrap width", default_value=500, max_value=1000,
                                        callback=lambda s, a, u: dpg.configure_item(u, wrap=a))
                     dpg.add_text(paragraph2, wrap=500)
                     dpg.configure_item(widget_id, user_data=dpg.last_item())
@@ -623,7 +623,7 @@ def show_demo():
 
                     dpg.add_input_text(label="input text", multiline=True, default_value=paragraph, height=300, callback=_log, tab_input=True)
 
-                    _add_config_options(dpg.last_item(), 1, 
+                    _add_config_options(dpg.last_item(), 1,
                             "readonly", "on_enter")
 
                 with dpg.tree_node(label="Filtered Text Input"):
@@ -634,7 +634,7 @@ def show_demo():
                     dpg.add_input_text(callback=_log, label="uppercase", uppercase=True)
                     dpg.add_input_text(callback=_log, label="scientific", scientific=True)
                     dpg.add_input_text(callback=_log, label="hexdecimal", hexadecimal=True)
-            
+
                 with dpg.tree_node(label="Password Input"):
 
                     password = dpg.add_input_text(label="password", password=True, callback=_log)
@@ -681,7 +681,7 @@ def show_demo():
                         int_source = dpg.add_input_intx(label=f"input int {i}", min_value=0, max_value=100, size=i)
                         dpg.add_drag_intx(label=f"drag int {i}", source=int_source, size=i)
                         dpg.add_slider_intx(label=f"slider int {i}", source=int_source, size=i)
-            
+
                     dpg.add_spacer(height=10)
 
             with dpg.tree_node(label="Vertical Sliders"):
@@ -725,7 +725,7 @@ def show_demo():
 
                 dpg.add_time_picker(default_value={'hour': 14, 'min': 32, 'sec': 23})
                 dpg.add_separator()
-            
+
                 with dpg.table(header_row=False):
 
                     dpg.add_table_column()
@@ -761,12 +761,12 @@ def show_demo():
                 # dpg.add_tree_node(label="Span available width", span_available_width=True)
                 dpg.add_tree_node(label="Span full width", span_full_width=True)
                 # dpg.add_tree_node(label="Span all columns", span_all_columns=True)
-                
+
 
         with dpg.collapsing_header(label="Layout & Scrolling"):
 
             with dpg.tree_node(label="Widgets Width"):
-                
+
                 dpg.add_text("Width=100")
                 dpg.add_drag_float(label="float", width=100)
 
@@ -818,7 +818,7 @@ def show_demo():
                     dpg.add_listbox(("AAAA", "BBBB", "CCCC", "DDDD"), default_value="BBBB", width=100, label="")
                     dpg.add_listbox(("AAAA", "BBBB", "CCCC", "DDDD"), default_value="CCCC", width=100, label="")
                     dpg.add_listbox(("AAAA", "BBBB", "CCCC", "DDDD"), default_value="DDDD", width=100, label="")
-                
+
                 dpg.add_text("Spacing(100):")
                 with dpg.group(horizontal=True, horizontal_spacing=100):
                     dpg.add_button(label="A", width=50, height=50)
@@ -835,7 +835,7 @@ def show_demo():
                 dpg.add_button(label="Button 1", pos=[50,50], width=75, height=75)
                 B2 = dpg.add_button(label="Button 2", width=75, height=75)
                 dpg.add_button(label="Button 3")
-        
+
             with dpg.tree_node(label="Grid Layout using Table API"):
                 layout_demo_table = dpg.generate_uuid()
                 dpg.add_text("Tables can be used to layout items in an equally spaced grid pattern.")
@@ -845,9 +845,9 @@ def show_demo():
                 dpg.add_checkbox(label="borders_outerH", callback=_config, user_data=layout_demo_table, default_value=True)
                 dpg.add_checkbox(label="borders_innerV", callback=_config, user_data=layout_demo_table, default_value=True)
                 dpg.add_checkbox(label="borders_outerV", callback=_config, user_data=layout_demo_table, default_value=True)
-                with dpg.table(tag=layout_demo_table, header_row=False, borders_innerH=True, 
+                with dpg.table(tag=layout_demo_table, header_row=False, borders_innerH=True,
                                borders_outerH=True, borders_innerV=True, borders_outerV=True):
-                    
+
                     dpg.add_table_column()
                     dpg.add_table_column()
                     dpg.add_table_column()
@@ -856,7 +856,7 @@ def show_demo():
                         dpg.add_button(label="Button 1")
                         dpg.add_button(label="Button 2")
                         dpg.add_button(label="Button 3")
-                    
+
                     with dpg.table_row():
                         dpg.add_table_cell()
                         dpg.add_button(label="Button 4")
@@ -873,7 +873,7 @@ def show_demo():
                         dpg.add_button(label="Button 1")
                         dpg.add_button(label="Button 2")
                         dpg.add_button(label="Button 3")
-                
+
                 with dpg.tree_node(label="Groups"):
                     dpg.add_text("Groups are used to control child items placement, width, and provide a hit box for things like is the set of items are hovered, etc...")
                     with dpg.group(horizontal=True):
@@ -888,7 +888,7 @@ def show_demo():
                         dpg.add_button(label="Button 1")
                         dpg.add_button(label="Button 2")
                         dpg.add_button(label="Button 3")
-                
+
                 with dpg.tree_node(label="Child windows"):
                     demo_layout_child = dpg.generate_uuid()
                     dpg.add_text("Child windows are basically embedded windows and provide much more structure and control of the containing items than groups.")
@@ -923,7 +923,7 @@ def show_demo():
                             dpg.add_button(label="Button 1")
                             dpg.add_button(label="Button 2")
                             dpg.add_button(label="Button 3")
-                
+
                 with dpg.tree_node(label="Collapsing Headers"):
                     with dpg.collapsing_header(label="Collapsing Header"):
                         dpg.add_button(label="Button 1")
@@ -941,16 +941,16 @@ def show_demo():
                         dpg.add_button(label="Button 1")
                         dpg.add_button(label="Button 2")
                         dpg.add_button(label="Button 3")
-                
+
                 with dpg.tree_node(label="Tabs"):
 
                     with dpg.tree_node(label="Basic"):
 
                         with dpg.tab_bar():
-                            
+
                             with dpg.tab(label="Avocado"):
                                 dpg.add_text("This is the avocado tab!")
-                            
+
                             with dpg.tab(label="Broccoli"):
                                 dpg.add_text("This is the broccoli tab!")
 
@@ -1018,14 +1018,14 @@ def show_demo():
             with dpg.tree_node(label="Scrolling"):
 
                 def _update_xscroll_info(sender, app_data, user_data):
-                    
+
                     with dpg.mutex():
                         x_scroll = dpg.get_x_scroll(user_data[1])
                         max_scroll = dpg.get_x_scroll_max(user_data[1])
                         dpg.set_value(user_data[0], str(x_scroll) + "/" + str(max_scroll))
 
                 def _update_yscroll_info(sender, app_data, user_data):
-                    
+
                     with dpg.mutex():
                         y_scroll = dpg.get_y_scroll(user_data[1])
                         max_scroll = dpg.get_y_scroll_max(user_data[1])
@@ -1053,7 +1053,7 @@ def show_demo():
                                             dpg.add_text("Item " + str(j), color=(255, 255, 0), tracked=True, track_offset=track_items[i])
                                         else:
                                             dpg.add_text("Item " + str(j))
-                        
+
                                 _text_id = dpg.add_text("0/0")
                                 with dpg.item_handler_registry(tag="__demo_item_reg1_"+str(i)):
                                     dpg.add_item_visible_handler(user_data=[_text_id, _child_id], callback=_update_yscroll_info)
@@ -1104,7 +1104,7 @@ def show_demo():
                 dpg.bind_item_handler_registry(_text_id, dpg.last_container())
 
         with dpg.collapsing_header(label="Textures & Images"):
-        
+
             with dpg.tree_node(label="Help"):
 
                 dpg.add_separator()
@@ -1170,7 +1170,7 @@ def show_demo():
                 with dpg.group(horizontal=True):
 
                     with dpg.group():
-                        dpg.add_color_picker((255, 0, 255, 255), label="Texture 1", 
+                        dpg.add_color_picker((255, 0, 255, 255), label="Texture 1",
                                 no_side_preview=True, alpha_bar=True, width=200,
                                 callback=_update_dynamic_textures, user_data=1)
                         dpg.add_text("Image Button")
@@ -1178,7 +1178,7 @@ def show_demo():
 
 
                     with dpg.group():
-                        dpg.add_color_picker((255, 255, 0, 255), label="Texture 2", 
+                        dpg.add_color_picker((255, 255, 0, 255), label="Texture 2",
                                              no_side_preview=True, alpha_bar=True, width=200,
                                              callback=_update_dynamic_textures, user_data=2)
                         dpg.add_text("Image")
@@ -1205,7 +1205,7 @@ def show_demo():
                     dpg.draw_image("__demo_dynamic_texture_1", [200, 100], [300, 200])
 
         with dpg.collapsing_header(label="Popups & Modal Windows"):
-            
+
             with dpg.tree_node(label="Popups"):
 
                 popup_values = ["Bream", "Haddock", "Mackerel", "Pollock", "Tilefish"]
@@ -1299,8 +1299,8 @@ def show_demo():
                             for j in range(3):
                                 dpg.add_text(f"Row{i} Column{j}")
 
-                _add_config_options(table_id, 2, 
-                                            "row_background", "borders_innerH", "borders_innerV", 
+                _add_config_options(table_id, 2,
+                                            "row_background", "borders_innerH", "borders_innerV",
                                             "borders_outerH", "borders_outerV", "header_row", before=table_id)
 
             with dpg.tree_node(label="Colors"):
@@ -1323,9 +1323,9 @@ def show_demo():
 
                     for i in range(6):
                         dpg.highlight_table_row(table_id, i, [255, 0, 0, 100])
-                        
+
                     dpg.highlight_table_column(table_id, 4, [0, 255, 0, 100])
-                    
+
                     dpg.highlight_table_cell(table_id, 1, 1, [0, 0, 255, 100])
                     dpg.highlight_table_cell(table_id, 2, 1, [0, 0, 255, 100])
                     dpg.highlight_table_cell(table_id, 1, 2, [0, 0, 255, 100])
@@ -1371,13 +1371,13 @@ def show_demo():
                             for j in range(3):
                                 dpg.add_text(f"Row{i} Column{j}")
 
-                _add_config_options(table_id, 1, 
+                _add_config_options(table_id, 1,
                             "borders_innerV", "borders_outerV", "resizable", before=table_id)
 
             with dpg.tree_node(label="Resizable, fixed"):
 
                 dpg.add_text("Only available if scrollX/scrollY are disabled and stretch columns are not used")
-                with dpg.table(header_row=False, policy=dpg.mvTable_SizingFixedFit, resizable=True, no_host_extendX=False, 
+                with dpg.table(header_row=False, policy=dpg.mvTable_SizingFixedFit, resizable=True, no_host_extendX=False,
                             borders_innerV=True, delay_search=True, borders_outerV=True,borders_outerH=True) as table_id:
 
                     dpg.add_table_column(label="Header 1")
@@ -1390,10 +1390,10 @@ def show_demo():
                                 dpg.add_text(f"Row{i} Column{j}")
 
                 _add_config_options(table_id, 1, "no_host_extendX", before=table_id)
- 
+
             with dpg.tree_node(label="Resizable, mixed"):
 
-                with dpg.table(header_row=True, policy=dpg.mvTable_SizingFixedFit, row_background=True, reorderable=True, 
+                with dpg.table(header_row=True, policy=dpg.mvTable_SizingFixedFit, row_background=True, reorderable=True,
                             resizable=True, no_host_extendX=False, hideable=True,
                             borders_innerV=True, delay_search=True, borders_outerV=True, borders_innerH=True, borders_outerH=True):
 
@@ -1409,7 +1409,7 @@ def show_demo():
                                 else:
                                     dpg.add_text(f"Fixed {i}, {j}")
 
-                with dpg.table(header_row=True, policy=dpg.mvTable_SizingFixedFit, row_background=True, reorderable=True, 
+                with dpg.table(header_row=True, policy=dpg.mvTable_SizingFixedFit, row_background=True, reorderable=True,
                             resizable=True, no_host_extendX=False, hideable=True,
                             borders_innerV=True, delay_search=True, borders_outerV=True, borders_innerH=True, borders_outerH=True):
 
@@ -1452,7 +1452,7 @@ def show_demo():
                     dpg.add_table_column()
 
                     options = (
-                        "default_hide", 
+                        "default_hide",
                         "default_sort",
                         "width_stretch",
                         "width_fixed",
@@ -1481,7 +1481,7 @@ def show_demo():
             with dpg.tree_node(label="Columns widths"):
 
                 with dpg.table(header_row=True, resizable=True,
-                            borders_outerH=True, borders_innerH=True, 
+                            borders_outerH=True, borders_innerH=True,
                             borders_outerV=True, delay_search=True):
 
                     dpg.add_table_column(label="One")
@@ -1519,7 +1519,7 @@ def show_demo():
                             for j in range(4):
                                 dpg.add_text(f"Hello {i}, {j}")
 
-                _add_config_options(table_id, 1, 
+                _add_config_options(table_id, 1,
                             "no_keep_columns_visible", "borders_innerV", "borders_outerV", before=table_id)
 
             with dpg.tree_node(label="Row height"):
@@ -1546,8 +1546,8 @@ def show_demo():
                             for j in range(3):
                                 dpg.add_button(label=f"Hello {i}, {j}", width=-1)
 
-                _add_config_options(table_id, 3, 
-                                            "pad_outerX", "no_pad_outerX", "no_pad_innerX", 
+                _add_config_options(table_id, 3,
+                                            "pad_outerX", "no_pad_outerX", "no_pad_innerX",
                                             "borders_outerV", "borders_innerV", "header_row", before=table_id)
 
             with dpg.tree_node(label="Angled headers"):
@@ -1578,7 +1578,7 @@ def show_demo():
                             for j in range(3):
                                 dpg.add_text(f"Hello {i}, {j}")
 
-                _add_config_options(table_id, 3, 
+                _add_config_options(table_id, 3,
                                             "hideable", "reorderable", "resizable", before=table_id)
 
             with dpg.tree_node(label="Outer Size"):
@@ -1587,7 +1587,7 @@ def show_demo():
                             borders_innerH=True, borders_outerH=True, borders_innerV=True,
                             borders_outerV=True, context_menu_in_body=True, row_background=True,
                             policy=dpg.mvTable_SizingFixedFit, height=150) as table_id:
-                
+
                     dpg.add_table_column(label="One")
                     dpg.add_table_column(label="Two")
                     dpg.add_table_column(label="three")
@@ -1597,7 +1597,7 @@ def show_demo():
                             for j in range(3):
                                 dpg.add_text(f"Cell {i}, {j}")
 
-                _add_config_options(table_id, 3, 
+                _add_config_options(table_id, 3,
                                             "no_host_extendX", "no_host_extendY", "resizable", before=table_id)
 
                 dpg.add_text("Using explicit size:")
@@ -1605,7 +1605,7 @@ def show_demo():
                             borders_innerH=True, borders_outerH=True, borders_innerV=True,
                             borders_outerV=True, context_menu_in_body=True, row_background=True,
                             policy=dpg.mvTable_SizingFixedFit, height=300, width=300):
-                
+
                     dpg.add_table_column(label="One")
                     dpg.add_table_column(label="Two")
                     dpg.add_table_column(label="three")
@@ -1737,7 +1737,7 @@ def show_demo():
                     new_order = []
                     for pair in sortable_list:
                         new_order.append(pair[0])
-                    
+
                     dpg.reorder_items(sender, 1, new_order)
 
                 with dpg.table(header_row=True, no_host_extendX=True,
@@ -1832,7 +1832,7 @@ def show_demo():
                     with dpg.table(header_row=False, policy=policy, delay_search=True,
                                 borders_innerH=True, borders_outerH=True, borders_innerV=True,
                                 borders_outerV=True, row_background=True) as table_id1:
-                
+
                         dpg.add_table_column()
                         dpg.add_table_column()
                         dpg.add_table_column()
@@ -1846,7 +1846,7 @@ def show_demo():
                     with dpg.table(header_row=False, policy=policy,
                                 borders_innerH=True, borders_outerH=True, borders_innerV=False,
                                 borders_outerV=True, row_background=True) as table_id2:
-                
+
                         dpg.add_table_column()
                         dpg.add_table_column()
                         dpg.add_table_column()
@@ -1871,7 +1871,7 @@ def show_demo():
                 combo1 = dpg.add_combo(sizing_options, label="Sizing Policy", default_value=sizing_options[0], before=table_id1, user_data=user_data + ["policy", 0], callback=callback)
                 dpg.add_combo(sizing_options, label="Sizing Policy", default_value=sizing_options[1], before=table_id2, user_data=user_data + ["policy", 2], callback=callback)
                 dpg.add_combo(sizing_options, label="Sizing Policy", default_value=sizing_options[2], before=table_id3, user_data=user_data + ["policy", 4], callback=callback)
-                dpg.add_combo(sizing_options, label="Sizing Policy", default_value=sizing_options[3], before=table_id4, user_data=user_data + ["policy", 6], callback=callback)  
+                dpg.add_combo(sizing_options, label="Sizing Policy", default_value=sizing_options[3], before=table_id4, user_data=user_data + ["policy", 6], callback=callback)
                 dpg.add_checkbox(label="resizable", before=combo1, user_data=user_data + ["resizable"], callback=callback)
                 dpg.add_checkbox(label="no_host_extendX", before=combo1, user_data=user_data + ["no_host_extendX"], callback=callback)
 
@@ -1884,52 +1884,52 @@ def show_demo():
                 sindatax.append(i/100)
                 sindatay.append(0.5 + 0.5*sin(50*i/100))
                 cosdatay.append(0.5 + 0.75*cos(50*i/100))
-        
+
             with dpg.tab_bar():
 
                 with dpg.tab(label="Series"):
 
-                    with dpg.tree_node(label="Line Series"):                
+                    with dpg.tree_node(label="Line Series"):
                         # create plot
                         with dpg.plot(label="Line Series", height=400, width=-1):
-                            
+
                             # optionally create legend
                             dpg.add_plot_legend()
 
                             # REQUIRED: create x and y axes
                             dpg.add_plot_axis(dpg.mvXAxis, label="x")
-                            
+
                             with dpg.plot_axis(dpg.mvYAxis, label="y"):
 
                                 # series belong to a y axis
                                 dpg.add_line_series(sindatax, sindatay, label="0.5 + 0.5 * sin(x)")
 
                     with dpg.tree_node(label="Filled Line Series"):
-                        dpg.add_checkbox(label="fill", tag="fill_series_cb", default_value=False, 
+                        dpg.add_checkbox(label="fill", tag="fill_series_cb", default_value=False,
                                          callback=lambda: dpg.configure_item("filled_line_series", shaded=dpg.get_value("fill_series_cb")))
-                        dpg.add_checkbox(label="segment", tag="segment_series_cb", default_value=False, 
+                        dpg.add_checkbox(label="segment", tag="segment_series_cb", default_value=False,
                                          callback=lambda: dpg.configure_item("filled_line_series", segments=dpg.get_value("segment_series_cb")))
                         with dpg.plot(label="Filled Line Plot", height=400, width=-1):
                             dpg.add_plot_legend()
                             dpg.add_plot_axis(dpg.mvXAxis, label="x")
                             with dpg.plot_axis(dpg.mvYAxis, label="y"):
                                 dpg.add_line_series(sindatax, sindatay, tag="filled_line_series", label="0.5 + 0.5 * sin(x)")
-                                
-                    with dpg.tree_node(label="Text point"):                
+
+                    with dpg.tree_node(label="Text point"):
                         # create plot
                         with dpg.plot(label="Text point", height=400, width=-1):
-                            
+
                             # optionally create legend
                             dpg.add_plot_legend()
 
                             # REQUIRED: create x and y axes
                             dpg.add_plot_axis(dpg.mvXAxis, label="x")
-                            
+
                             with dpg.plot_axis(dpg.mvYAxis, label="y"):
 
                                 # series belong to a y axis
                                 dpg.add_text_point(2., 1.5, label="Text point label")
-                                
+
                     with dpg.tree_node(label="Shade Series"):
                         std_alpha = 0.25
 
@@ -2032,9 +2032,9 @@ def show_demo():
                                 dpg.add_scatter_series(sindatax, sindatay, label="0.5 + 0.5 * sin(x)")
 
                     with dpg.tree_node(label="Stair Series"):
-                        dpg.add_checkbox(label="pre-step", tag="pre_step_cb", default_value=False, 
+                        dpg.add_checkbox(label="pre-step", tag="pre_step_cb", default_value=False,
                             callback=lambda: dpg.configure_item("stair_series", pre_step=dpg.get_value("pre_step_cb")))
-                        dpg.add_checkbox(label="filled", tag="filled_stairs_cb", default_value=False, 
+                        dpg.add_checkbox(label="filled", tag="filled_stairs_cb", default_value=False,
                             callback=lambda: dpg.configure_item("stair_series", shaded=dpg.get_value("filled_stairs_cb")))
                         with dpg.plot(label="Stair Plot", height=400, width=-1):
                             dpg.add_plot_legend()
@@ -2043,7 +2043,7 @@ def show_demo():
                                 dpg.add_stair_series(sindatax, sindatay, tag="stair_series", label="0.5 + 0.5 * sin(x)")
 
                     with dpg.tree_node(label="Bar Series"):
-                        dpg.add_checkbox(label="horizontal", tag="horizontal_bar_cb", default_value=False, 
+                        dpg.add_checkbox(label="horizontal", tag="horizontal_bar_cb", default_value=False,
                             callback=lambda: dpg.configure_item("bar_series", horizontal=dpg.get_value("horizontal_bar_cb")))
                         with dpg.plot(label="Bar Series", height=400, width=-1):
 
@@ -2055,19 +2055,19 @@ def show_demo():
                             dpg.set_axis_ticks(dpg.last_item(), (("S1", 11), ("S2", 21), ("S3", 31)))
                             dpg.add_plot_axis(dpg.mvXAxis2, label="hor_value", no_gridlines=True)
                             dpg.set_axis_limits(dpg.last_item(), 0, 110)
-                            
-                
+
+
                             # create y axis
                             with dpg.plot_axis(dpg.mvYAxis, label="Score"):
                                 dpg.set_axis_limits(dpg.last_item(), 0, 110)
                                 dpg.add_bar_series([10, 20, 30], [100, 75, 90],  tag="bar_series", label="Final Exam", weight=1)
                                 dpg.add_bar_series([11, 21, 31], [83, 75, 72], label="Midterm Exam", weight=1)
                                 dpg.add_bar_series([12, 22, 32], [42, 68, 23], label="Course Grade", weight=1)
-                                
+
 
                     with dpg.tree_node(label="Bar Group Series"):
                         limits_group_series = [-0.5, 9.5]
-                        
+
                         def set_horizontal(sender, app_data, user_data):
                             dpg.configure_item("bar_group_series", horizontal=app_data)
                             if app_data:
@@ -2080,7 +2080,7 @@ def show_demo():
                                 dpg.set_axis_ticks("xaxis_bar_group", glabels)
                                 dpg.reset_axis_ticks("yaxis_bar_group")
                                 dpg.set_axis_limits_auto("yaxis_bar_group")
-                        
+
                         def _callback_stacked(sender, app_data, user_data):
                             dpg.configure_item("bar_group_series", stacked=app_data)
                             is_horizontal = dpg.get_item_configuration("bar_group_series")["horizontal"]
@@ -2088,18 +2088,18 @@ def show_demo():
                                 dpg.set_axis_limits_auto("xaxis_bar_group")
                             else:
                                 dpg.set_axis_limits_auto("yaxis_bar_group")
-                            
+
                         dpg.add_checkbox(label="Horizontal", default_value=False, callback=set_horizontal)
                         dpg.add_checkbox(label="Stacked", default_value=False, callback=_callback_stacked)
-                        dpg.add_slider_float(label="Bar Width", default_value=0.67, max_value=1.0, 
+                        dpg.add_slider_float(label="Bar Width", default_value=0.67, max_value=1.0,
                                              min_value=0.1, callback=lambda _, val: dpg.configure_item("bar_group_series", group_width=val))
                         with dpg.plot(label="Bar Group Series", height=400, width=-1):
                             dpg.add_plot_legend()
-                            
+
                             values_group_series = [83, 67, 23, 89, 83, 78, 91, 82, 85, 90,
                                 80, 62, 56, 99, 55, 78, 88, 78, 90, 100,
                                 80, 69, 52, 92, 72, 78, 75, 76, 89, 95]
-                            
+
                             ilabels = ["Midterm Exam","Final Exam","Course Grade"]
                             glabels = (("S1",0), ("S2",1), ("S3",2), ("S4",3), ("S5",4), ("S6",5), ("S7",6), ("S8",7), ("S9",8), ("S10",9))
                             groups_c = 3
@@ -2112,7 +2112,7 @@ def show_demo():
                             # create y axis
                             with dpg.plot_axis(dpg.mvYAxis, label="Score", tag="yaxis_bar_group", auto_fit=True):
                                 dpg.set_axis_limits(dpg.last_item(), 0, 110)
-                                dpg.add_bar_group_series(values=values_group_series, label_ids=ilabels, 
+                                dpg.add_bar_group_series(values=values_group_series, label_ids=ilabels,
                                     group_size=groups_c, tag="bar_group_series", label="Final Exam")
 
                     with dpg.tree_node(label="Bar Stacks"):
@@ -2139,13 +2139,13 @@ def show_demo():
                             1,8,6,8,23,10,12,15,15,20,14,15,22,20,19,25,15,18,24,21]                      # True
                         labels_div = ["Pants on Fire","False","Mostly False","Mostly False",
                         "False","Pants on Fire","Half True","Mostly True","True"]
-                        
+
                         def divergent_stack_cb(sender, app_data, user_data):
                             if app_data:
                                 dpg.configure_item("divergent_stack_series", values=data_div, label_ids=labels_div, group_size=len(labels_reg), group_width=0.75, shift=0, stacked=True, horizontal=True)
                             else:
                                 dpg.configure_item("divergent_stack_series", values=data_reg, label_ids=labels_reg, group_size=len(labels_div), group_width=0.75, shift=0, stacked=True, horizontal=True)
-                        
+
                         dpg.add_checkbox(label="Divergent", tag="divergent_stack_cb", default_value=True, callback=divergent_stack_cb)
                         with dpg.plot(label="PolitiFact: Who Lies More?", height=400, width=-1):
                             dpg.add_plot_legend()
@@ -2173,7 +2173,7 @@ def show_demo():
                         error2_pos = [0.4, 0.2, 0.4, 0.8, 0.6]
 
                         dpg.add_text("Anti-aliasing can be enabled from the plot's context menu (see Help).", bullet=True)
-               
+
                         with dpg.plot(label="Error Series", height=400, width=-1):
                             dpg.add_plot_legend()
                             xaxis = dpg.add_plot_axis(dpg.mvXAxis, label="x")
@@ -2253,7 +2253,7 @@ def show_demo():
 
                     with dpg.tree_node(label="Heatmaps"):
 
-                        dpg.add_checkbox(label="major col", tag="major_col_heat_cb", default_value=False, 
+                        dpg.add_checkbox(label="major col", tag="major_col_heat_cb", default_value=False,
                             callback=lambda _, a: dpg.configure_item("heat_series", col_major=a))
 
 
@@ -2280,10 +2280,10 @@ def show_demo():
 
                         def update_density(user_data, app_data, other_data):
                             dpg.configure_item("histogram_series", density=app_data)
-                        
-                        dpg.add_checkbox(label="density", tag="density_histograms_cb", default_value=False, 
+
+                        dpg.add_checkbox(label="density", tag="density_histograms_cb", default_value=False,
                             callback=update_density)
-                        dpg.add_checkbox(label="cumulative", tag="cumulative_histograms_cb", default_value=False, 
+                        dpg.add_checkbox(label="cumulative", tag="cumulative_histograms_cb", default_value=False,
                             callback=lambda: dpg.configure_item("histogram_series", cumulative=dpg.get_value("cumulative_histograms_cb")))
 
 
@@ -2295,7 +2295,7 @@ def show_demo():
                             with dpg.plot_axis(dpg.mvYAxis, label="y axis", tag="yaxis_histogram", auto_fit=True) as yaxis:
                                 dpg.add_histogram_series(x_data, tag="histogram_series", label="histogram")
                             dpg.fit_axis_data(xaxis)
-                            
+
                     with dpg.tree_node(label="Histogram 2D Series"):
                         def update_count(_, app_data):
                             global count_2d_histogram
@@ -2444,7 +2444,7 @@ def show_demo():
                                         with dpg.plot_axis(dpg.mvYAxis, label="", no_tick_labels=True):
                                             dpg.add_line_series(sindatax, sindatay, label="0.5 + 0.5 * sin(x)")
 
-                        _add_config_options(subplot_id, 1, 
+                        _add_config_options(subplot_id, 1,
                                                     "no_resize", "no_title", before=subplot_id)
 
                     with dpg.tree_node(label="Item Sharing"):
@@ -2459,7 +2459,7 @@ def show_demo():
                                         with dpg.plot_axis(dpg.mvYAxis, label=""):
                                             dpg.add_line_series(sindatax, sindatay, label="data" + str(i))
 
-                        _add_config_options(subplot_id, 1, 
+                        _add_config_options(subplot_id, 1,
                                                     "column_major", before=subplot_id)
 
                     with dpg.tree_node(label="Linked Axes"):
@@ -2474,7 +2474,7 @@ def show_demo():
                                         with dpg.plot_axis(dpg.mvYAxis, label=""):
                                             dpg.add_line_series(sindatax, sindatay, label="data" + str(i))
 
-                        _add_config_options(subplot_id, 2, 
+                        _add_config_options(subplot_id, 2,
                                                     "no_align", "link_rows", "link_columns",
                                                     "link_all_x", "link_all_y", before=subplot_id)
 
@@ -2484,16 +2484,16 @@ def show_demo():
 
                         timedatax = []
                         timedatay = []
-                
+
                         time_index = 0
                         while time_index < 739497600:
                             timedatax.append(time_index)
                             timedatay.append(time_index/(60*60*24))
                             time_index+=60*60*24*7
-                
+
                         dpg.add_text("When time is enabled, x-axis values are interpreted as UNIX timestamps in seconds (e.g. 1599243545).", bullet=True)
                         dpg.add_text("UNIX timestamps are seconds since 00:00:00 UTC on 1 January 1970", bullet=True)
-                
+
                         with dpg.plot(label="Time Plot", height=400, width=-1):
                             xaxis = dpg.add_plot_axis(dpg.mvXAxis, label="Date", scale=dpg.mvPlotScale_Time)
                             with dpg.plot_axis(dpg.mvYAxis, label="Days since 1970"):
@@ -2504,7 +2504,7 @@ def show_demo():
                     with dpg.tree_node(label="Multi Axes Plot"):
                         def show_hide_axis(axis, value):
                             dpg.configure_item(axis, show=value)
-                        
+
                         dpg.add_checkbox(label="Show Y1", tag="show_y1", default_value=True, callback=lambda:show_hide_axis("y1_axis", dpg.get_value("show_y1")))
                         dpg.add_checkbox(label="Show Y2", tag="show_y2", default_value=True, callback=lambda:show_hide_axis("y2_axis", dpg.get_value("show_y2")))
                         dpg.add_checkbox(label="Show Y3", tag="show_y3", default_value=True, callback=lambda:show_hide_axis("y3_axis", dpg.get_value("show_y3")))
@@ -2542,7 +2542,7 @@ def show_demo():
                                          callback=lambda _, val: dpg.configure_item("y_axis_ordering", opposite=val))
                         dpg.add_checkbox(label="Invert Y", default_value=False,
                                          callback=lambda _, val: dpg.configure_item("y_axis_ordering", invert=val))
-                        
+
                         with dpg.plot(label="Ordering Axes Plot", height=400, width=-1):
 
                             dpg.add_plot_legend()
@@ -2641,10 +2641,10 @@ def show_demo():
                             dpg.add_plot_axis(dpg.mvXAxis, label="x")
                             with dpg.plot_axis(dpg.mvYAxis, label="y"):
                                 dpg.add_line_series(sindatax, sindatay)
-                                
+
                         dpg.add_text("This plot takes care only of the first query rect")
                         # plot 2
-                        with dpg.plot(no_title=True, height=400, no_menus=True, width=-1, tag="plot2"):          
+                        with dpg.plot(no_title=True, height=400, no_menus=True, width=-1, tag="plot2"):
                             xaxis_id2 = dpg.add_plot_axis(dpg.mvXAxis, label="x")
                             yaxis_id2 = dpg.add_plot_axis(dpg.mvYAxis, label="y")
                             dpg.add_line_series(sindatax, sindatay, parent=yaxis_id2)
@@ -2664,7 +2664,7 @@ def show_demo():
                             dpg.add_drag_line(color=[255, 255, 0, 255], vertical=False)
                             dpg.add_drag_point(label="dpoint1", color=[255, 0, 255, 255])
                             dpg.add_drag_point(label="dpoint2", color=[255, 0, 255, 255])
-                            
+
                     with dpg.tree_node(label="Drag Rects"):
 
                         def drag_query(sender, app_data, user_data):
@@ -2672,7 +2672,7 @@ def show_demo():
                             dpg.set_axis_limits(user_data[1], app_data[0][3], app_data[0][1])
 
                         with dpg.plot(label="Drag Rects", height=400, width=-1, callback=drag_query) as plot_drag:
-                            
+
                             dpg.add_plot_axis(dpg.mvXAxis, label="x")
                             with dpg.plot_axis(dpg.mvYAxis, label="y"):
                                 dpg.add_line_series(sindatax, sindatay)
@@ -2756,7 +2756,7 @@ def show_demo():
                                 dpg.add_plot_axis(dpg.mvYAxis, label="y1", drop_callback=_axis_drop, payload_type="plotting")
                                 dpg.add_plot_axis(dpg.mvYAxis2, label="y2", drop_callback=_axis_drop, payload_type="plotting")
                                 dpg.add_plot_axis(dpg.mvYAxis3, label="y3", drop_callback=_axis_drop, payload_type="plotting")
-                                
+
 
 
                     with dpg.tree_node(label="Legend Options"):
@@ -2804,12 +2804,12 @@ def show_demo():
                         vals = [0.0 for i in range(101)]
                         for i in range(101):
                             vals[i] = amplitude * sin(frequency * i)
-                        
+
                         def recalculate_vals(amplitude, frequency):
                             for i in range(101):
                                 vals[i] = amplitude * sin(frequency * i)
                             dpg.configure_item("bar_custom_legend", y=vals)
-                        
+
                         with dpg.plot(label="Line Series"):
                             dpg.add_plot_legend()
                             dpg.add_plot_axis(dpg.mvXAxis, label="x")
@@ -2817,7 +2817,7 @@ def show_demo():
                             with dpg.plot_axis(dpg.mvYAxis):
                                 dpg.add_bar_series(x, vals, tag="bar_custom_legend", label="Right Click Me!")
                                 with dpg.group(parent=dpg.last_item()):
-                                    dpg.add_slider_float(label="Frequency", default_value=frequency, min_value=0.01, max_value=5.0, 
+                                    dpg.add_slider_float(label="Frequency", default_value=frequency, min_value=0.01, max_value=5.0,
                                         tag="frequency", callback=lambda: recalculate_vals(dpg.get_value("amplitude"), dpg.get_value("frequency")))
                                     dpg.add_slider_float(label="Amplitude", default_value=amplitude, min_value=0.01, max_value=5.0,
                                                          tag="amplitude", callback=lambda: recalculate_vals(dpg.get_value("amplitude"), dpg.get_value("frequency")))
@@ -2829,7 +2829,7 @@ def show_demo():
 
                         dpg.add_text("Right-click the series in the legend.", bullet=True)
                         dpg.add_text("Series are containers. Children will show up in the custom context menu.", bullet=True)
-                
+
                         # create plot
                         with dpg.plot(label="Line Series", height=400, width=-1):
 
@@ -2878,7 +2878,7 @@ def show_demo():
                                     dpg.configure_item("demo_custom_series", tooltip=True)
                                     dpg.set_value("demo_custom_series_text", "Current Point: " + str(i))
                             dpg.pop_container_stack()
-                        
+
                         # create plot
                         dpg.add_text("Hover an item for a custom tooltip!")
                         with dpg.plot(label="Custom Series", height=400, width=-1):
@@ -2910,7 +2910,7 @@ def show_demo():
 
             dpg.add_text("Ctrl+Click to remove a link.", bullet=True)
 
-            with dpg.node_editor(callback=lambda sender, app_data: dpg.add_node_link(app_data[0], app_data[1], parent=sender), 
+            with dpg.node_editor(callback=lambda sender, app_data: dpg.add_node_link(app_data[0], app_data[1], parent=sender),
                              delink_callback=lambda sender, app_data: dpg.delete_item(app_data), minimap=True, minimap_location=dpg.mvNodeMiniMap_Location_BottomRight):
 
                 with dpg.node(label="Node 1", pos=[10, 10]):
@@ -2929,10 +2929,10 @@ def show_demo():
                     with dpg.node_attribute(attribute_type=dpg.mvNode_Attr_Output):
                         dpg.add_input_float(label="F4", width=200)
 
-                with dpg.node(label="Node 3", pos=[25, 150]):                                  
+                with dpg.node(label="Node 3", pos=[25, 150]):
                     with dpg.node_attribute():
                         dpg.add_input_text(label="T5", width=200)
-                    with dpg.node_attribute(attribute_type=dpg.mvNode_Attr_Static): 
+                    with dpg.node_attribute(attribute_type=dpg.mvNode_Attr_Static):
                         dpg.add_simple_plot(label="Node Plot", default_value=(0.3, 0.9, 2.5, 8.9), width=200, height=80, histogram=True)
 
         with dpg.collapsing_header(label= "Filtering"):
@@ -2952,7 +2952,7 @@ def show_demo():
                 dpg.add_text("bbb2.cpp", filter_key="bbb2.cpp", bullet=True)
                 dpg.add_text("ccc2.cpp", filter_key="ccc2.cpp", bullet=True)
                 dpg.add_text("abc.h", filter_key="abc.h", bullet=True)
-                dpg.add_text("hello, world", filter_key="hello, world", bullet=True)   
+                dpg.add_text("hello, world", filter_key="hello, world", bullet=True)
 
         with dpg.collapsing_header(label="Drawing API"):
 
@@ -2984,12 +2984,12 @@ def show_demo():
                         draw_x = draw_x + draw_spacing + draw_size
                         dpg.draw_line([draw_x, draw_y], [draw_x + draw_size, draw_y + draw_size], thickness=_draw_t, color=draw_color)
                         draw_x = draw_x + draw_spacing + draw_size
-                        dpg.draw_bezier_quadratic([draw_x, draw_y + draw_size * 0.6], 
-                                                  [draw_x + draw_size*0.5, draw_y - draw_size * 0.4], 
+                        dpg.draw_bezier_quadratic([draw_x, draw_y + draw_size * 0.6],
+                                                  [draw_x + draw_size*0.5, draw_y - draw_size * 0.4],
                                                   [draw_x + draw_size, draw_y + draw_size], thickness=_draw_t, color=draw_color)
                         draw_x = draw_x + draw_spacing + draw_size
-                        dpg.draw_bezier_cubic([draw_x, draw_y], 
-                                              [draw_x + draw_size*1.3, draw_y + draw_size * 0.3], 
+                        dpg.draw_bezier_cubic([draw_x, draw_y],
+                                              [draw_x + draw_size*1.3, draw_y + draw_size * 0.3],
                                               [draw_x+draw_size - draw_size*1.3, draw_y + draw_size - draw_size*0.3],
                                               [draw_x + draw_size, draw_y + draw_size], thickness=_draw_t, color=draw_color)
                         draw_x = 4
@@ -3253,7 +3253,7 @@ def show_demo():
                 dpg.set_item_callback(handler, _event_handler)
 
         with dpg.collapsing_header(label="Drag & Drop"):
-           
+
            with dpg.tree_node(label="Help"):
 
                 dpg.add_text("Adding a drag_payload to a widget makes it source.", bullet=True)
@@ -3355,7 +3355,7 @@ def show_demo():
                 staged_container = dpg.generate_uuid()
 
                 def _callback_auto_mutex(sender, app_data, user_data):
-                    
+
                     for i in range(100):
                         dpg.add_text("Item: " + str(i), parent=user_data)
 
