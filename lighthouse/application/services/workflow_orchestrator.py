@@ -27,7 +27,7 @@ class WorkflowOrchestrator:
         self,
         topology_service: Optional[TopologyService] = None,
         expression_service: Optional[ExpressionService] = None,
-        execution_manager: Optional[ExecutionManager] = None
+        execution_manager: Optional[ExecutionManager] = None,
     ):
         """
         Initialize the workflow orchestrator.
@@ -41,11 +41,7 @@ class WorkflowOrchestrator:
         self.expression_service = expression_service or ExpressionService()
         self.execution_manager = execution_manager or ExecutionManager()
 
-    def execute_workflow(
-        self,
-        workflow: Workflow,
-        triggered_by: str
-    ) -> Dict[str, Any]:
+    def execute_workflow(self, workflow: Workflow, triggered_by: str) -> Dict[str, Any]:
         """
         Execute a workflow.
 
@@ -74,7 +70,7 @@ class WorkflowOrchestrator:
             workflow_id=workflow.id,
             workflow_name=workflow.name,
             triggered_by=triggered_by,
-            execution_order=sorted_node_ids
+            execution_order=sorted_node_ids,
         )
 
         # Start execution
@@ -102,23 +98,15 @@ class WorkflowOrchestrator:
                     "session_id": session_id,
                     "status": "FAILED",
                     "results": execution_results,
-                    "error": f"Node {node.name} failed: {result.error}"
+                    "error": f"Node {node.name} failed: {result.error}",
                 }
 
         # End execution
         self.execution_manager.end_session(status="COMPLETED")
 
-        return {
-            "session_id": session_id,
-            "status": "COMPLETED",
-            "results": execution_results
-        }
+        return {"session_id": session_id, "status": "COMPLETED", "results": execution_results}
 
-    def _execute_node(
-        self,
-        node: BaseNode,
-        workflow: Workflow
-    ) -> Any:
+    def _execute_node(self, node: BaseNode, workflow: Workflow) -> Any:
         """
         Execute a single node.
 
@@ -130,7 +118,7 @@ class WorkflowOrchestrator:
             Execution result
         """
         # Log node start
-        self.execution_manager.log_node_start(node.id, node.name)
+        self.execution_manager.log_node_start(node.id, node.name, node_type=node.__class__.__name__)
 
         # Get current context
         context = self.execution_manager.get_node_context()
@@ -147,19 +135,11 @@ class WorkflowOrchestrator:
             result = node.execute(context)
 
             # Log success
-            self.execution_manager.log_node_end(
-                node.id,
-                status="SUCCESS",
-                output_data=result.data
-            )
+            self.execution_manager.log_node_end(node.id, status="SUCCESS", output_data=result.data)
 
             # Update context with node output
             if result.success and result.data:
-                self.execution_manager.set_node_context(
-                    node.id,
-                    node.name,
-                    result.data
-                )
+                self.execution_manager.set_node_context(node.id, node.name, result.data)
 
             return result
 
@@ -167,23 +147,15 @@ class WorkflowOrchestrator:
             # Log error
             error_message = str(e)
             self.execution_manager.log_node_end(
-                node.id,
-                status="ERROR",
-                error_message=error_message
+                node.id, status="ERROR", error_message=error_message
             )
 
             # Return error result
             from lighthouse.domain.models.node import ExecutionResult
-            return ExecutionResult.error_result(
-                error=error_message,
-                duration=0.0
-            )
 
-    def _resolve_node_state(
-        self,
-        node: BaseNode,
-        context: Dict[str, Any]
-    ) -> Dict[str, Any]:
+            return ExecutionResult.error_result(error=error_message, duration=0.0)
+
+    def _resolve_node_state(self, node: BaseNode, context: Dict[str, Any]) -> Dict[str, Any]:
         """
         Resolve expressions in node state.
 

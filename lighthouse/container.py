@@ -14,6 +14,8 @@ from lighthouse.application.services.node_factory import NodeFactory
 from lighthouse.application.services.execution_manager import ExecutionManager
 from lighthouse.application.services.workflow_orchestrator import WorkflowOrchestrator
 from lighthouse.nodes.registry import NodeRegistry, get_registry
+from lighthouse.domain.protocols.logger_protocol import ILogger
+from lighthouse.infrastructure.logging.file_logger import FileLogger
 
 
 @dataclass
@@ -36,14 +38,15 @@ class ServiceContainer:
     execution_manager: ExecutionManager
     workflow_orchestrator: WorkflowOrchestrator
 
-    # Optional UI components (None in headless mode)
-    # node_renderer: Optional[INodeRenderer] = None
-    # logger: Optional[ILogger] = None
+    # Infrastructure services
+    logger: Optional[ILogger] = None
 
 
 def create_container(
     ui_mode: bool = False,
-    registry: Optional[NodeRegistry] = None
+    registry: Optional[NodeRegistry] = None,
+    enable_logging: bool = True,
+    logs_dir: str = ".logs",
 ) -> ServiceContainer:
     """
     Create and wire the service container.
@@ -51,6 +54,8 @@ def create_container(
     Args:
         ui_mode: Whether to initialize UI components
         registry: Optional custom node registry (uses global if None)
+        enable_logging: Whether to enable file logging (default: True)
+        logs_dir: Directory for log files (default: .logs)
 
     Returns:
         Fully wired ServiceContainer
@@ -60,16 +65,21 @@ def create_container(
     topology_service = TopologyService()
     context_builder = ContextBuilder()
 
+    # Infrastructure services
+    logger: Optional[ILogger] = None
+    if enable_logging:
+        logger = FileLogger(logs_dir=logs_dir)
+
     # Node registry and factory
     node_registry = registry or get_registry()
     node_factory = NodeFactory(registry=node_registry)
 
     # Execution services
-    execution_manager = ExecutionManager()
+    execution_manager = ExecutionManager(logger=logger)
     workflow_orchestrator = WorkflowOrchestrator(
         topology_service=topology_service,
         expression_service=expression_service,
-        execution_manager=execution_manager
+        execution_manager=execution_manager,
     )
 
     # Create container
@@ -80,7 +90,8 @@ def create_container(
         node_registry=node_registry,
         node_factory=node_factory,
         execution_manager=execution_manager,
-        workflow_orchestrator=workflow_orchestrator
+        workflow_orchestrator=workflow_orchestrator,
+        logger=logger,
     )
 
 

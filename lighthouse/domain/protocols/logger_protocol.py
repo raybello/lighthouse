@@ -1,6 +1,6 @@
 """Protocol for logging services."""
 
-from typing import Protocol, Dict, Any
+from typing import Protocol, Dict, Any, Optional
 
 
 class ILogger(Protocol):
@@ -12,11 +12,7 @@ class ILogger(Protocol):
     changing business logic.
     """
 
-    def create_session(
-        self,
-        execution_id: str,
-        metadata: Dict[str, Any]
-    ) -> None:
+    def create_session(self, execution_id: str, metadata: Dict[str, Any]) -> None:
         """
         Create a new logging session for a workflow execution.
 
@@ -26,13 +22,16 @@ class ILogger(Protocol):
         """
         ...
 
-    def log(
-        self,
-        execution_id: str,
-        level: str,
-        source: str,
-        message: str
-    ) -> None:
+    def start_session(self, execution_id: str) -> None:
+        """
+        Mark the execution session as started.
+
+        Args:
+            execution_id: Execution identifier
+        """
+        ...
+
+    def log(self, execution_id: str, level: str, source: str, message: str) -> None:
         """
         Write a log message.
 
@@ -45,10 +44,7 @@ class ILogger(Protocol):
         ...
 
     def log_node_start(
-        self,
-        execution_id: str,
-        node_id: str,
-        node_name: str
+        self, execution_id: str, node_id: str, node_name: str, node_type: str = "Unknown"
     ) -> None:
         """
         Log the start of a node execution.
@@ -57,6 +53,7 @@ class ILogger(Protocol):
             execution_id: Execution session ID
             node_id: Node identifier
             node_name: Node display name
+            node_type: Node type/class
         """
         ...
 
@@ -67,7 +64,8 @@ class ILogger(Protocol):
         node_name: str,
         success: bool,
         duration: float,
-        error: str = None
+        output_data: Optional[Dict[str, Any]] = None,
+        error: Optional[str] = None,
     ) -> None:
         """
         Log the completion of a node execution.
@@ -78,16 +76,24 @@ class ILogger(Protocol):
             node_name: Node display name
             success: Whether execution succeeded
             duration: Execution duration in seconds
+            output_data: Node output data
             error: Error message if failed
         """
         ...
 
-    def end_session(
-        self,
-        execution_id: str,
-        status: str,
-        duration: float
-    ) -> None:
+    def log_to_node(self, execution_id: str, node_id: str, level: str, message: str) -> None:
+        """
+        Write a log message to a specific node's log file.
+
+        Args:
+            execution_id: Execution session ID
+            node_id: Node identifier
+            level: Log level (INFO, DEBUG, WARN, ERROR)
+            message: Log message
+        """
+        ...
+
+    def end_session(self, execution_id: str, status: str, duration: float) -> None:
         """
         Finalize a logging session.
 

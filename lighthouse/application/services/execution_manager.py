@@ -11,8 +11,9 @@ import uuid
 from lighthouse.domain.models.execution import (
     ExecutionSession,
     ExecutionStatus,
-    NodeExecutionRecord
+    NodeExecutionRecord,
 )
+from lighthouse.domain.protocols.logger_protocol import ILogger
 
 
 class ExecutionManager:
@@ -24,20 +25,27 @@ class ExecutionManager:
     - Tracking node execution records
     - Building and maintaining node context
     - Managing execution lifecycle
+    - Delegating logging to ILogger implementation
     """
 
-    def __init__(self):
-        """Initialize the execution manager."""
+    def __init__(self, logger: Optional[ILogger] = None):
+        """
+        Initialize the execution manager.
+
+        Args:
+            logger: Optional logger implementation for file/remote logging
+        """
         self.current_session: Optional[ExecutionSession] = None
         self.session_history: list[ExecutionSession] = []
         self.node_context: Dict[str, Dict[str, Any]] = {}
+        self.logger = logger
 
     def create_session(
         self,
         workflow_id: str,
         workflow_name: str,
         triggered_by: str,
-        execution_order: Optional[list[str]] = None
+        execution_order: Optional[list[str]] = None,
     ) -> str:
         """
         Create a new execution session.
@@ -59,10 +67,23 @@ class ExecutionManager:
             workflow_name=workflow_name,
             status=ExecutionStatus.PENDING,
             triggered_by=triggered_by,
-            execution_order=execution_order or []
+            execution_order=execution_order or [],
         )
 
         self.node_context = {}
+
+        # Create logging session if logger is available
+        if self.logger:
+            self.logger.create_session(
+                execution_id=session_id,
+                metadata={
+                    "workflow_id": workflow_id,
+                    "workflow_name": workflow_name,
+                    "triggered_by": triggered_by,
+                    "node_count": len(execution_order) if execution_order else 0,
+                    "execution_order": execution_order or [],
+                },
+            )
 
         return session_id
 
@@ -73,6 +94,10 @@ class ExecutionManager:
 
         self.current_session.start()
 
+        # Start logging session
+        if self.logger:
+            self.logger.start_session(self.current_session.id)
+
     def end_session(self, status: str = "COMPLETED") -> None:
         """
         End the current execution session.
@@ -82,6 +107,11 @@ class ExecutionManager:
         """
         if not self.current_session:
             raise RuntimeError("No active session to end")
+
+        # Calculate duration
+        duration = 0.0
+        if self.current_session.start_time:
+            duration = (datetime.now() - self.current_session.start_time).total_seconds()
 
         # Use domain model methods
         if status == "COMPLETED":
@@ -94,17 +124,24 @@ class ExecutionManager:
             # Fallback
             self.current_session.status = ExecutionStatus.COMPLETED
 
+        # End logging session
+        if self.logger:
+            self.logger.end_session(
+                execution_id=self.current_session.id, status=status, duration=duration
+            )
+
         # Archive session
         self.session_history.append(self.current_session)
         self.current_session = None
 
-    def log_node_start(self, node_id: str, node_name: str) -> None:
+    def log_node_start(self, node_id: str, node_name: str, node_type: str = "Unknown") -> None:
         """
         Log the start of a node execution.
 
         Args:
             node_id: Node ID
             node_name: Node name
+            node_type: Node type/class
         """
         if not self.current_session:
             raise RuntimeError("No active session for logging")
@@ -113,17 +150,26 @@ class ExecutionManager:
             node_id=node_id,
             node_name=node_name,
             status=ExecutionStatus.RUNNING,
-            start_time=datetime.now()
+            start_time=datetime.now(),
         )
 
         self.current_session.add_node_record(record)
+
+        # Log to file if logger is available
+        if self.logger:
+            self.logger.log_node_start(
+                execution_id=self.current_session.id,
+                node_id=node_id,
+                node_name=node_name,
+                node_type=node_type,
+            )
 
     def log_node_end(
         self,
         node_id: str,
         status: str,
         output_data: Optional[Dict[str, Any]] = None,
-        error_message: Optional[str] = None
+        error_message: Optional[str] = None,
     ) -> None:
         """
         Log the end of a node execution.
@@ -159,12 +205,19 @@ class ExecutionManager:
         if error_message:
             record.error = error_message
 
-    def set_node_context(
-        self,
-        node_id: str,
-        node_name: str,
-        output_data: Dict[str, Any]
-    ) -> None:
+        # Log to file if logger is available
+        if self.logger:
+            self.logger.log_node_end(
+                execution_id=self.current_session.id,
+                node_id=node_id,
+                node_name=record.node_name,
+                success=(status in ("SUCCESS", "COMPLETED")),
+                duration=record.duration_seconds or 0.0,
+                output_data=output_data,
+                error=error_message,
+            )
+
+    def set_node_context(self, node_id: str, node_name: str, output_data: Dict[str, Any]) -> None:
         """
         Store node output in context for expression evaluation.
 
@@ -232,3 +285,19 @@ class ExecutionManager:
             List of completed sessions
         """
         return self.session_history.copy()
+
+    def log_to_node(self, node_id: str, level: str, message: str) -> None:
+        """
+        Log a message to a specific node's log file.
+
+        Args:
+            node_id: Node ID
+            level: Log level (INFO, DEBUG, WARN, ERROR)
+            message: Log message
+        """
+        if not self.current_session or not self.logger:
+            return
+
+        self.logger.log_to_node(
+            execution_id=self.current_session.id, node_id=node_id, level=level, message=message
+        )
