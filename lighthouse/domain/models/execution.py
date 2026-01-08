@@ -28,7 +28,7 @@ class ExecutionMode(Enum):
 class ExecutionConfig:
     """Configuration for workflow execution."""
 
-    mode: ExecutionMode = ExecutionMode.SEQUENTIAL
+    mode: ExecutionMode = ExecutionMode.PARALLEL
     max_workers: int = field(default_factory=lambda: min(4, multiprocessing.cpu_count()))
     enable_profiling: bool = True
     fail_fast: bool = True  # Stop on first error vs collect all errors

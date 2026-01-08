@@ -88,11 +88,12 @@ class ExecutionTraceRenderer:
         r_norm = r / 255.0
         g_norm = g / 255.0
         b_norm = b / 255.0
+        rgb_norm = [r_norm, g_norm, b_norm, a]
 
         # Create solid color texture
         texture_data = []
         for _ in range(size * size):
-            texture_data.extend([r_norm, g_norm, b_norm, a])
+            texture_data.extend(rgb_norm)
 
         return texture_data
 
