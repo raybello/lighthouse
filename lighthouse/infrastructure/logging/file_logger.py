@@ -34,6 +34,7 @@ class FileLogger:
         self.current_session: Optional[Dict[str, Any]] = None
         self.registry_file = self.logs_dir / "execution_registry.json"
         self.execution_registry: List[Dict[str, Any]] = []
+        self._session_start_time: Optional[datetime] = None  # For relative timing
 
         # Setup logs directory
         self._setup_logs_directory()
@@ -123,8 +124,9 @@ class FileLogger:
         if not self.current_session or self.current_session["id"] != execution_id:
             return
 
+        self._session_start_time = datetime.now()
         self.current_session["status"] = "RUNNING"
-        self.current_session["started_at"] = datetime.now().isoformat()
+        self.current_session["started_at"] = self._session_start_time.isoformat()
         self._save_session_metadata()
 
     def end_session(self, execution_id: str, status: str, duration: float) -> None:
@@ -163,6 +165,7 @@ class FileLogger:
 
         # Clear current session
         self.current_session = None
+        self._session_start_time = None
 
     def log(self, execution_id: str, level: str, source: str, message: str) -> None:
         """
@@ -183,7 +186,12 @@ class FileLogger:
         self._log_to_file(summary_log, level, source, message)
 
     def log_node_start(
-        self, execution_id: str, node_id: str, node_name: str, node_type: str = "Unknown"
+        self,
+        execution_id: str,
+        node_id: str,
+        node_name: str,
+        node_type: str = "Unknown",
+        level: int = 0,
     ) -> None:
         """
         Log the start of a node execution.
@@ -193,6 +201,7 @@ class FileLogger:
             node_id: Node identifier
             node_name: Node display name
             node_type: Node type/class
+            level: Execution level for parallel execution visualization
         """
         if not self.current_session or self.current_session["id"] != execution_id:
             return
@@ -201,6 +210,12 @@ class FileLogger:
         log_filename = f"{node_id}_{node_name.replace(' ', '_')}.log"
         log_file = exec_dir / log_filename
 
+        # Calculate relative start time
+        node_start_time = datetime.now()
+        relative_start = 0.0
+        if self._session_start_time:
+            relative_start = (node_start_time - self._session_start_time).total_seconds()
+
         # Create node execution log entry
         node_log_entry = {
             "node_id": node_id,
@@ -208,9 +223,12 @@ class FileLogger:
             "node_type": node_type,
             "execution_id": execution_id,
             "status": "RUNNING",
-            "started_at": datetime.now().isoformat(),
+            "started_at": node_start_time.isoformat(),
             "ended_at": None,
             "duration_seconds": None,
+            "relative_start_seconds": relative_start,
+            "relative_end_seconds": None,
+            "level": level,
             "log_file": log_filename,
             "error_message": None,
             "outputs": None,
@@ -270,6 +288,17 @@ class FileLogger:
         node_log_entry["duration_seconds"] = duration
         node_log_entry["error_message"] = error
         node_log_entry["outputs"] = output_data
+
+        # Calculate relative end time
+        if self._session_start_time:
+            node_log_entry["relative_end_seconds"] = (
+                ended_at - self._session_start_time
+            ).total_seconds()
+        else:
+            # Fall back to using duration if session start time is not available
+            node_log_entry["relative_end_seconds"] = (
+                node_log_entry.get("relative_start_seconds", 0.0) + duration
+            )
 
         # Update execution counters
         if success:

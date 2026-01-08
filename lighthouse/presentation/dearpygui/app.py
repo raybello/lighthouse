@@ -18,6 +18,11 @@ from rich.console import Console
 from lighthouse.config import ApplicationConfig
 from lighthouse.container import ServiceContainer, create_ui_container
 from lighthouse.domain.models.workflow import Workflow
+from lighthouse.presentation.dearpygui.execution_trace_renderer import (
+    ExecutionTraceRenderer,
+    extract_traces_from_exec_data,
+    has_timing_data,
+)
 from lighthouse.presentation.dearpygui.node_renderer import DearPyGuiNodeRenderer
 from lighthouse.presentation.dearpygui.theme_manager import ThemeManager
 
@@ -858,7 +863,7 @@ class LighthouseUI:
 
     def _view_execution_summary(self, exec_id: str, exec_data: Dict[str, Any]) -> None:
         """
-        View execution summary in a modal window.
+        View execution summary in a modal window with trace graph.
 
         Args:
             exec_id: Execution ID
@@ -904,23 +909,55 @@ class LighthouseUI:
 
         content = "\n".join(lines)
 
+        # Determine window height based on whether we have timing data
+        has_trace_data = has_timing_data(exec_data)
+        window_height = 700 if has_trace_data else 500
+
+        # Track renderer for cleanup
+        trace_renderer: Optional[ExecutionTraceRenderer] = None
+
         with dpg.window(
             label=f"Execution Summary: {exec_id}",
             tag=viewer_tag,
             modal=False,
             show=True,
-            width=700,
-            height=500,
+            width=800,
+            height=window_height,
             pos=[200, 100],
         ):
+            # Add execution trace graph if timing data is available
+            if has_trace_data:
+                dpg.add_text("Execution Timeline", color=(200, 200, 255))
+                traces = extract_traces_from_exec_data(exec_data)
+                total_duration = exec_data.get("duration_seconds", 1.0) or 1.0
+
+                trace_renderer = ExecutionTraceRenderer()
+                trace_renderer.render(
+                    parent_tag=viewer_tag,
+                    traces=traces,
+                    total_duration=total_duration,
+                    height=200,
+                )
+                dpg.add_separator()
+                dpg.add_spacer(height=10)
+
+            # Text summary section
+            dpg.add_text("Execution Details", color=(200, 200, 255))
             dpg.add_input_text(
                 default_value=content,
                 multiline=True,
                 readonly=True,
                 width=-1,
-                height=-50,
+                height=-50 if has_trace_data else -50,
             )
-            dpg.add_button(label="Close", callback=lambda: dpg.delete_item(viewer_tag), width=-1)
+
+            # Close button with cleanup
+            def on_close():
+                if trace_renderer:
+                    trace_renderer.cleanup()
+                dpg.delete_item(viewer_tag)
+
+            dpg.add_button(label="Close", callback=on_close, width=-1)
 
     def _view_execution_errors(self, exec_id: str, exec_data: Dict[str, Any]) -> None:
         """

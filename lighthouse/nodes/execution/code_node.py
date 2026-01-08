@@ -74,7 +74,7 @@ class CodeNode(ExecutionNode):
                 FieldDefinition(
                     name="code",
                     label="Python Code",
-                    field_type=FieldType.STRING,  # Long text
+                    field_type=FieldType.LONG_STRING,  # Long text
                     default_value=(
                         "# Write Python code here\n# Set 'result' variable for output\nresult = 42"
                     ),
