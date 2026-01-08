@@ -231,6 +231,12 @@ class LighthouseUI:
                     callback=lambda: self._refresh_execution_logs(),
                     width=80,
                 )
+                dpg.add_button(
+                    label="Cancel Execution",
+                    tag="cancel_execution_btn",
+                    callback=lambda: self._cancel_execution(),
+                    width=120,
+                )
 
             dpg.add_separator()
 
@@ -311,7 +317,7 @@ class LighthouseUI:
 
     def _create_execution_log_entry(self, exec_data: Dict[str, Any]) -> None:
         """
-        Create a collapsible execution log entry.
+        Create or update a collapsible execution log entry.
 
         Args:
             exec_data: Execution metadata dictionary
@@ -349,11 +355,17 @@ class LighthouseUI:
             else:
                 duration_str = f"{duration:.1f}s"
 
+        tree_tag = f"exec_tree_{exec_id}"
+
+        # If the tree node already exists, delete it first to avoid conflicts
+        if dpg.does_item_exist(tree_tag):
+            dpg.delete_item(tree_tag)
+
         # Create collapsible tree node for execution
         with dpg.tree_node(
             label=f"{icon} {exec_id} | {status} | {duration_str}",
             parent="execution_logs_container",
-            tag=f"exec_tree_{exec_id}",
+            tag=tree_tag,
             default_open=True if status == "RUNNING" else False,
         ):
             # Summary info
@@ -415,7 +427,7 @@ class LighthouseUI:
 
     def _create_node_log_entry(self, exec_id: str, node_log: Dict[str, Any]) -> None:
         """
-        Create a node log entry display as a nested tree node.
+        Create or update a node log entry display as a nested tree node.
 
         Args:
             exec_id: Execution ID
@@ -443,10 +455,16 @@ class LighthouseUI:
         if node_log.get("duration_seconds"):
             duration_str = f"{node_log['duration_seconds']:.2f}s"
 
+        node_tree_tag = f"node_log_{exec_id}_{node_id}"
+
+        # If the node tree already exists, delete it first to avoid conflicts
+        if dpg.does_item_exist(node_tree_tag):
+            dpg.delete_item(node_tree_tag)
+
         # Create nested tree node for node
         with dpg.tree_node(
             label=f"  {icon} {node_name} ({node_id[:8]}) | {duration_str}",
-            tag=f"node_log_{exec_id}_{node_id}",
+            tag=node_tree_tag,
             default_open=False,
         ):
             # Show error if present
@@ -1038,54 +1056,121 @@ class LighthouseUI:
         console.print(f"[cyan]Context built with {len(self.node_last_outputs)} nodes[/cyan]")
 
     def _exec_graph(self, trigger_node_id: str) -> None:
-        """Execute the workflow graph starting from a trigger node."""
-        execution_order = self._topo_sort()
-        console.print(f"Execution order: {execution_order}")
+        """Execute the workflow graph starting from a trigger node in a separate thread."""
+        console.print(f"ENGINE: Starting async execution from {trigger_node_id}")
 
-        # Create and start execution session
-        self.container.execution_manager.create_session(
-            workflow_id=self.workflow.id,
-            workflow_name=self.workflow.name,
-            triggered_by=trigger_node_id,
-            execution_order=execution_order,
-        )
-        self.container.execution_manager.start_session()
+        # Check if already executing
+        if self.container.workflow_orchestrator.is_executing():
+            console.print("[yellow]Execution already in progress. Please wait...[/yellow]")
+            return
 
-        # Refresh logs to show execution started
-        self._refresh_execution_logs()
+        try:
+            # Execute workflow asynchronously
+            self.container.workflow_orchestrator.execute_workflow_async(
+                workflow=self.workflow,
+                triggered_by=trigger_node_id,
+                on_node_start=self._on_async_node_start,
+                on_node_complete=self._on_async_node_complete,
+                on_node_error=self._on_async_node_error,
+                on_complete=self._on_async_execution_complete,
+            )
 
-        # Build context from completed nodes
-        self._build_context_from_completed_nodes(execution_order)
+            # Initial log refresh
+            self._refresh_execution_logs()
 
-        # Execute nodes in order
-        started = False
-        has_errors = False
-        for nid in execution_order:
-            node = self.nodes.get(nid)
-            if not node:
-                continue
+        except Exception as e:
+            console.print(f"[red]Failed to start execution: {e}[/red]")
 
-            if node.status == "PENDING":
-                self._execute_step(nid)
-            elif node.status == "ERROR":
-                self._execute_step(nid)
-                has_errors = True
-            elif node.status == "COMPLETED" and started:
-                self._execute_step(nid)
-            elif node.status == "COMPLETED" and not started and nid == trigger_node_id:
-                started = True
-                self._execute_step(nid)
+    def _on_async_node_start(self, node_id: str, node_name: str) -> None:
+        """
+        Callback when a node starts execution (called from worker thread).
 
-            # Check if current node errored
-            if node.status == "ERROR":
-                has_errors = True
+        Args:
+            node_id: ID of the node starting
+            node_name: Name of the node
+        """
+        console.print(f"[cyan]Node starting: {node_name} ({node_id[:8]})[/cyan]")
+        self._set_exec_status(node_id, (194, 188, 81), "RUNNING")
 
-        # End execution session
-        final_status = "FAILED" if has_errors else "COMPLETED"
-        self.container.execution_manager.end_session(final_status)
+        # Refresh logs to show node started (safe to call from thread)
+        if dpg.does_item_exist("execution_logs_tab"):
+            dpg.set_frame_callback(
+                dpg.get_frame_count() + 1, lambda: self._refresh_execution_logs()
+            )
 
-        # Refresh logs display
-        self._refresh_execution_logs()
+    def _on_async_node_complete(self, node_id: str, result: Any) -> None:
+        """
+        Callback when a node completes successfully (called from worker thread).
+
+        Args:
+            node_id: ID of the completed node
+            result: Execution result from the node
+        """
+        node = self.nodes.get(node_id)
+        node_name = node.name if node else node_id[:8]
+
+        console.print(f"[green]Node completed: {node_name} ({node_id[:8]})[/green]")
+
+        # Store output for context building
+        if result.success and result.data:
+            self.node_last_outputs[node_id] = {"data": result.data}
+
+        # Update UI (must be done on main thread via frame callback)
+        self._set_exec_status(node_id, (83, 202, 74), "COMPLETED")
+
+        # Schedule log refresh for next frame
+        if dpg.does_item_exist("execution_logs_tab"):
+            dpg.set_frame_callback(
+                dpg.get_frame_count() + 1, lambda: self._refresh_execution_logs()
+            )
+
+    def _on_async_node_error(self, node_id: str, error: str) -> None:
+        """
+        Callback when a node fails (called from worker thread).
+
+        Args:
+            node_id: ID of the failed node
+            error: Error message
+        """
+        node = self.nodes.get(node_id)
+        node_name = node.name if node else node_id[:8]
+
+        console.print(f"[red]Node failed: {node_name} ({node_id[:8]}): {error}[/red]")
+
+        # Update UI (must be done on main thread via frame callback)
+        self._set_exec_status(node_id, (202, 74, 74), "ERROR")
+
+        # Schedule log refresh for next frame
+        if dpg.does_item_exist("execution_logs_tab"):
+            dpg.set_frame_callback(
+                dpg.get_frame_count() + 1, lambda: self._refresh_execution_logs()
+            )
+
+    def _on_async_execution_complete(self, result: Dict[str, Any]) -> None:
+        """
+        Callback when entire workflow execution completes (called from worker thread).
+
+        Args:
+            result: Final execution result
+        """
+        status = result.get("status", "UNKNOWN")
+        session_id = result.get("session_id", "N/A")
+
+        console.print(f"[cyan]Execution complete: {status} (session: {session_id})[/cyan]")
+
+        # Schedule final log refresh for next frame
+        if dpg.does_item_exist("execution_logs_tab"):
+            dpg.set_frame_callback(
+                dpg.get_frame_count() + 1, lambda: self._refresh_execution_logs()
+            )
+
+    def _cancel_execution(self) -> None:
+        """Cancel the currently running workflow execution."""
+        if self.container.workflow_orchestrator.is_executing():
+            console.print("[yellow]Cancelling workflow execution...[/yellow]")
+            self.container.workflow_orchestrator.cancel_execution()
+        else:
+            console.print("[yellow]No execution in progress to cancel.[/yellow]")
 
     def _update_logs(self, result: Dict[str, Any]) -> None:
         """Update the logs panel with execution results."""

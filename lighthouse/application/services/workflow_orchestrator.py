@@ -4,7 +4,8 @@ Workflow orchestrator for coordinating node execution.
 Pure business logic with NO UI dependencies.
 """
 
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Callable
+from threading import Thread, Event
 from lighthouse.nodes.base.base_node import BaseNode
 from lighthouse.domain.services.topology_service import TopologyService
 from lighthouse.domain.services.expression_service import ExpressionService
@@ -40,10 +41,12 @@ class WorkflowOrchestrator:
         self.topology_service = topology_service or TopologyService()
         self.expression_service = expression_service or ExpressionService()
         self.execution_manager = execution_manager or ExecutionManager()
+        self._cancel_event = Event()
+        self._execution_thread: Optional[Thread] = None
 
     def execute_workflow(self, workflow: Workflow, triggered_by: str) -> Dict[str, Any]:
         """
-        Execute a workflow.
+        Execute a workflow synchronously (for backward compatibility).
 
         Args:
             workflow: Workflow to execute
@@ -105,6 +108,189 @@ class WorkflowOrchestrator:
         self.execution_manager.end_session(status="COMPLETED")
 
         return {"session_id": session_id, "status": "COMPLETED", "results": execution_results}
+
+    def execute_workflow_async(
+        self,
+        workflow: Workflow,
+        triggered_by: str,
+        on_node_start: Optional[Callable[[str, str], None]] = None,
+        on_node_complete: Optional[Callable[[str, Any], None]] = None,
+        on_node_error: Optional[Callable[[str, str], None]] = None,
+        on_complete: Optional[Callable[[Dict[str, Any]], None]] = None,
+    ) -> Thread:
+        """
+        Execute a workflow asynchronously in a separate thread.
+
+        Args:
+            workflow: Workflow to execute
+            triggered_by: Node that triggered execution
+            on_node_start: Callback when a node starts (node_id, node_name)
+            on_node_complete: Callback when a node completes (node_id, result)
+            on_node_error: Callback when a node errors (node_id, error)
+            on_complete: Callback when entire workflow completes (final_result)
+
+        Returns:
+            Thread object for the execution
+
+        Raises:
+            ValueError: If workflow has cycles or is invalid
+            RuntimeError: If another execution is already running
+        """
+        if self._execution_thread and self._execution_thread.is_alive():
+            raise RuntimeError("Another workflow execution is already running")
+
+        # Reset cancel event
+        self._cancel_event.clear()
+
+        # Create and start thread
+        self._execution_thread = Thread(
+            target=self._execute_workflow_thread,
+            args=(
+                workflow,
+                triggered_by,
+                on_node_start,
+                on_node_complete,
+                on_node_error,
+                on_complete,
+            ),
+            daemon=True,
+        )
+        self._execution_thread.start()
+
+        return self._execution_thread
+
+    def cancel_execution(self) -> None:
+        """Cancel the currently running async execution."""
+        self._cancel_event.set()
+
+    def is_executing(self) -> bool:
+        """Check if a workflow is currently executing."""
+        return self._execution_thread is not None and self._execution_thread.is_alive()
+
+    def _execute_workflow_thread(
+        self,
+        workflow: Workflow,
+        triggered_by: str,
+        on_node_start: Optional[Callable[[str, str], None]],
+        on_node_complete: Optional[Callable[[str, Any], None]],
+        on_node_error: Optional[Callable[[str, str], None]],
+        on_complete: Optional[Callable[[Dict[str, Any]], None]],
+    ) -> None:
+        """
+        Internal method to execute workflow in a thread.
+
+        Args:
+            workflow: Workflow to execute
+            triggered_by: Node that triggered execution
+            on_node_start: Callback when a node starts
+            on_node_complete: Callback when a node completes
+            on_node_error: Callback when a node errors
+            on_complete: Callback when execution completes
+        """
+        try:
+            # Validate workflow
+            if not workflow.nodes:
+                if on_complete:
+                    on_complete({"status": "FAILED", "error": "Workflow has no nodes"})
+                return
+
+            # Perform topological sort
+            try:
+                sorted_node_ids = self.topology_service.topological_sort(workflow)
+            except ValueError as e:
+                if on_complete:
+                    on_complete({"status": "FAILED", "error": f"Workflow has cycles: {e}"})
+                return
+
+            # Create execution session
+            session_id = self.execution_manager.create_session(
+                workflow_id=workflow.id,
+                workflow_name=workflow.name,
+                triggered_by=triggered_by,
+                execution_order=sorted_node_ids,
+            )
+
+            # Start execution
+            self.execution_manager.start_session()
+            self.execution_manager.clear_context()
+
+            # Execute nodes in topological order
+            execution_results = {}
+
+            for node_id in sorted_node_ids:
+                # Check for cancellation
+                if self._cancel_event.is_set():
+                    self.execution_manager.end_session(status="CANCELLED")
+                    if on_complete:
+                        on_complete(
+                            {
+                                "session_id": session_id,
+                                "status": "CANCELLED",
+                                "results": execution_results,
+                            }
+                        )
+                    return
+
+                node = workflow.get_node(node_id)
+
+                if not node:
+                    continue
+
+                # Notify node start
+                if on_node_start:
+                    on_node_start(node_id, node.name)
+
+                # Execute node
+                result = self._execute_node(node, workflow)
+
+                execution_results[node_id] = result
+
+                # Notify based on result
+                if result.success:
+                    if on_node_complete:
+                        on_node_complete(node_id, result)
+                else:
+                    if on_node_error:
+                        on_node_error(node_id, result.error or "Unknown error")
+
+                    # Stop execution if node failed
+                    self.execution_manager.end_session(status="FAILED")
+                    if on_complete:
+                        on_complete(
+                            {
+                                "session_id": session_id,
+                                "status": "FAILED",
+                                "results": execution_results,
+                                "error": f"Node {node.name} failed: {result.error}",
+                            }
+                        )
+                    return
+
+            # End execution successfully
+            self.execution_manager.end_session(status="COMPLETED")
+            if on_complete:
+                on_complete(
+                    {
+                        "session_id": session_id,
+                        "status": "COMPLETED",
+                        "results": execution_results,
+                    }
+                )
+
+        except Exception as e:
+            # Handle unexpected errors
+            try:
+                self.execution_manager.end_session(status="FAILED")
+            except Exception:
+                pass
+
+            if on_complete:
+                on_complete(
+                    {
+                        "status": "FAILED",
+                        "error": f"Execution error: {str(e)}",
+                    }
+                )
 
     def _execute_node(self, node: BaseNode, workflow: Workflow) -> Any:
         """
