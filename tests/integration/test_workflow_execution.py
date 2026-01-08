@@ -96,7 +96,11 @@ class TestWorkflowExecution:
 
         # Configure calc2: (x + y) * 2 = 14
         calc2.update_state(
-            {"field_a": "{{$node['Add'].data.result}}", "field_b": "2", "operation": "*"}
+            {
+                "field_a": "{{$node['Add'].data.result}}",
+                "field_b": "2",
+                "operation": "*",
+            }
         )
 
         # Build workflow
@@ -338,3 +342,229 @@ class TestServiceIntegration:
 
         assert result1 == 42
         assert result2 == "Alice"
+
+
+class TestExpressionPreservation:
+    """Integration tests for expression preservation after execution."""
+
+    def test_calculator_expression_preserved(self, container, workflow):
+        """Test that Calculator node expressions are preserved after execution."""
+        factory = container.node_factory
+
+        # Create nodes
+        input_node = factory.create_node("Input", name="TestInput")
+        calc_node = factory.create_node("Calculator", name="TestCalc")
+
+        # Configure input node
+        input_node.update_state(
+            {"properties": '[{"name": "value", "value": "10", "type": "number"}]'}
+        )
+
+        # Configure calculator with expression
+        expression = '{{$node["TestInput"].data.value}}'
+        calc_node.update_state({"field_a": expression, "field_b": "2", "operation": "+"})
+
+        # Add nodes to workflow
+        workflow.add_node(input_node)
+        workflow.add_node(calc_node)
+        workflow.add_connection(input_node.id, calc_node.id)
+
+        # Execute workflow
+        result = container.workflow_orchestrator.execute_workflow(
+            workflow, triggered_by=input_node.id
+        )
+
+        # Verify execution succeeded
+        assert result["status"] == "COMPLETED"
+        assert result["results"][calc_node.id].data["result"] == 12
+
+        # Verify expression is preserved in node state
+        assert expression in calc_node.state.get("field_a", ""), (
+            f"Expression not preserved! Got: {calc_node.state.get('field_a')}"
+        )
+
+    def test_http_expression_preserved(self, container, workflow):
+        """Test that HTTPRequest node expressions are preserved after execution."""
+        factory = container.node_factory
+
+        # Create nodes
+        input_node = factory.create_node("Input", name="TestInput")
+        http_node = factory.create_node("HTTPRequest", name="TestHTTP")
+
+        # Configure input node
+        input_node.update_state({"properties": '[{"name": "url", "value": "httpbin.org/get"}]'})
+
+        # Configure HTTP node with expression
+        expression = '{{$node["TestInput"].data.url}}'
+        http_node.update_state({"url": expression, "method": "GET", "body": "{}", "timeout": "5"})
+
+        # Add nodes to workflow
+        workflow.add_node(input_node)
+        workflow.add_node(http_node)
+        workflow.add_connection(input_node.id, http_node.id)
+
+        # Execute workflow
+        result = container.workflow_orchestrator.execute_workflow(
+            workflow, triggered_by=input_node.id
+        )
+
+        # Verify expression is preserved in node state (regardless of execution success)
+        assert expression in http_node.state.get("url", ""), (
+            f"Expression not preserved! Got: {http_node.state.get('url')}"
+        )
+
+    def test_form_expression_preserved(self, container, workflow):
+        """Test that Form node expressions are preserved after execution."""
+        factory = container.node_factory
+
+        # Create nodes
+        input_node = factory.create_node("Input", name="TestInput")
+        form_node = factory.create_node("Form", name="TestForm")
+
+        # Configure input node
+        input_node.update_state(
+            {"properties": '[{"name": "name", "value": "Alice", "type": "string"}]'}
+        )
+
+        # Configure form node with expression in field value
+        expression = '{{$node["TestInput"].data.name}}'
+        form_node.update_state(
+            {"form_fields_json": f'[{{"name": "user", "type": "string", "value": "{expression}"}}]'}
+        )
+
+        # Add nodes to workflow
+        workflow.add_node(input_node)
+        workflow.add_node(form_node)
+        workflow.add_connection(input_node.id, form_node.id)
+
+        # Execute workflow
+        result = container.workflow_orchestrator.execute_workflow(
+            workflow, triggered_by=input_node.id
+        )
+
+        # Verify execution succeeded
+        assert result["status"] == "COMPLETED"
+
+        # Verify expression is preserved in node state
+        assert expression in form_node.state.get("form_fields_json", ""), (
+            f"Expression not preserved! Got: {form_node.state.get('form_fields_json')}"
+        )
+
+    def test_code_expression_preserved(self, container, workflow):
+        """Test that Code node expressions are preserved after execution."""
+        factory = container.node_factory
+
+        # Create nodes
+        input_node = factory.create_node("Input", name="TestInput")
+        code_node = factory.create_node("Code", name="TestCode")
+
+        # Configure input node
+        input_node.update_state(
+            {"properties": '[{"name": "value", "value": "42", "type": "number"}]'}
+        )
+
+        # Configure code node with expression in code
+        expression = '{{$node["TestInput"].data.value}}'
+        code_node.update_state({"code": f"result = {expression} * 2"})
+
+        # Add nodes to workflow
+        workflow.add_node(input_node)
+        workflow.add_node(code_node)
+        workflow.add_connection(input_node.id, code_node.id)
+
+        # Execute workflow
+        result = container.workflow_orchestrator.execute_workflow(
+            workflow, triggered_by=input_node.id
+        )
+
+        # Verify execution succeeded
+        assert result["status"] == "COMPLETED"
+
+        # Verify expression is preserved in node state
+        assert expression in code_node.state.get("code", ""), (
+            f"Expression not preserved! Got: {code_node.state.get('code')}"
+        )
+
+    def test_command_expression_preserved(self, container, workflow):
+        """Test that ExecuteCommand node expressions are preserved after execution."""
+        factory = container.node_factory
+
+        # Create nodes
+        input_node = factory.create_node("Input", name="TestInput")
+        command_node = factory.create_node("ExecuteCommand", name="TestCommand")
+
+        # Configure input node
+        input_node.update_state(
+            {"properties": '[{"name": "text", "value": "hello", "type": "string"}]'}
+        )
+
+        # Configure command node with expression
+        expression = '{{$node["TestInput"].data.text}}'
+        command_node.update_state({"command": f"echo {expression}"})
+
+        # Add nodes to workflow
+        workflow.add_node(input_node)
+        workflow.add_node(command_node)
+        workflow.add_connection(input_node.id, command_node.id)
+
+        # Execute workflow
+        result = container.workflow_orchestrator.execute_workflow(
+            workflow, triggered_by=input_node.id
+        )
+
+        # Verify execution succeeded
+        assert result["status"] == "COMPLETED"
+
+        # Verify expression is preserved in node state
+        assert expression in command_node.state.get("command", ""), (
+            f"Expression not preserved! Got: {command_node.state.get('command')}"
+        )
+
+    def test_multiple_expressions_in_workflow(self, container, workflow):
+        """Test that multiple expressions across different nodes are preserved."""
+        factory = container.node_factory
+
+        # Create nodes
+        input_node = factory.create_node("Input", name="Source")
+        calc_node = factory.create_node("Calculator", name="Calc")
+        form_node = factory.create_node("Form", name="Display")
+
+        # Configure input node
+        input_node.update_state({"properties": '[{"name": "x", "value": "5", "type": "number"}]'})
+
+        # Configure calculator with expression
+        calc_expression = '{{$node["Source"].data.x}}'
+        calc_node.update_state({"field_a": calc_expression, "field_b": "3", "operation": "*"})
+
+        # Configure form with expression referencing calculator result
+        form_expression = '{{$node["Calc"].data.result}}'
+        form_node.update_state(
+            {
+                "form_fields_json": f'[{{"name": "result", "type": "number", "value": "{form_expression}"}}]'
+            }
+        )
+
+        # Build workflow
+        workflow.add_node(input_node)
+        workflow.add_node(calc_node)
+        workflow.add_node(form_node)
+
+        workflow.add_connection(input_node.id, calc_node.id)
+        workflow.add_connection(calc_node.id, form_node.id)
+
+        # Execute workflow
+        result = container.workflow_orchestrator.execute_workflow(
+            workflow, triggered_by=input_node.id
+        )
+
+        # Verify execution succeeded
+        assert result["status"] == "COMPLETED"
+
+        # Verify all expressions are preserved
+        assert calc_expression in calc_node.state.get("field_a", ""), (
+            f"Calc expression not preserved! Got: {calc_node.state.get('field_a')}"
+        )
+
+        assert form_expression in form_node.state.get("form_fields_json", ""), (
+            f"Form expression not preserved! Got: {form_node.state.get('form_fields_json')}"
+        )
