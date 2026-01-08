@@ -67,6 +67,10 @@ class LighthouseUI:
         # Node instances (domain nodes mapped to UI)
         self.nodes: Dict[str, Any] = {}
 
+        # File state tracking
+        self.current_file_path: Optional[str] = None
+        self.is_dirty: bool = False
+
         # Components
         self.theme_manager = ThemeManager()
         self.node_renderer: Optional[DearPyGuiNodeRenderer] = None
@@ -116,6 +120,9 @@ class LighthouseUI:
     def _setup_ui(self) -> None:
         """Create the main UI layout."""
         with dpg.window(tag="primary_window") as self._primary_window:
+            # Add menu bar
+            self._setup_menu_bar()
+
             with dpg.tab_bar(tag="main_tab_bar"):
                 # Node Editor Tab
                 with dpg.tab(label="Node Editor", tag="node_editor_tab"):
@@ -182,6 +189,337 @@ class LighthouseUI:
                     width=200,
                 )
                 dpg.bind_item_theme(btn, "context_button_theme")
+
+    def _setup_menu_bar(self) -> None:
+        """Setup the menu bar with File menu."""
+        with dpg.menu_bar():
+            with dpg.menu(label="File"):
+                dpg.add_menu_item(
+                    label="New",
+                    callback=self._new_workflow,
+                    shortcut="Ctrl+N",
+                )
+                dpg.add_menu_item(
+                    label="Open...",
+                    callback=self._open_workflow,
+                    shortcut="Ctrl+O",
+                )
+                dpg.add_separator()
+                dpg.add_menu_item(
+                    label="Save",
+                    callback=self._save_workflow,
+                    shortcut="Ctrl+S",
+                )
+                dpg.add_menu_item(
+                    label="Save As...",
+                    callback=self._save_workflow_as,
+                    shortcut="Ctrl+Shift+S",
+                )
+                dpg.add_separator()
+                dpg.add_menu_item(
+                    label="Exit",
+                    callback=lambda: dpg.stop_dearpygui(),
+                )
+
+    def _update_title(self) -> None:
+        """Update window title to reflect current file and dirty state."""
+        base_title = "Lighthouse"
+
+        if self.current_file_path:
+            import os
+
+            filename = os.path.basename(self.current_file_path)
+            base_title = f"Lighthouse - {filename}"
+
+        if self.is_dirty:
+            base_title += " *"
+
+        dpg.set_viewport_title(base_title)
+
+    def _mark_dirty(self) -> None:
+        """Mark workflow as having unsaved changes."""
+        if not self.is_dirty:
+            self.is_dirty = True
+            self._update_title()
+
+    def _mark_clean(self) -> None:
+        """Mark workflow as saved (no unsaved changes)."""
+        if self.is_dirty:
+            self.is_dirty = False
+            self._update_title()
+
+    def _check_unsaved_changes(self) -> bool:
+        """
+        Check for unsaved changes and prompt user.
+
+        Returns:
+            True if it's safe to proceed (saved or discarded)
+            False if user cancelled
+        """
+        if not self.is_dirty:
+            return True
+
+        # Create modal dialog
+        with dpg.window(
+            label="Unsaved Changes",
+            modal=True,
+            show=True,
+            tag="unsaved_dialog",
+            no_resize=True,
+            pos=[self.width // 2 - 150, self.height // 2 - 50],
+        ):
+            dpg.add_text("You have unsaved changes. What would you like to do?")
+            dpg.add_separator()
+
+            with dpg.group(horizontal=True):
+                dpg.add_button(
+                    label="Save",
+                    callback=lambda: self._handle_unsaved_save(),
+                    width=90,
+                )
+                dpg.add_button(
+                    label="Don't Save",
+                    callback=lambda: self._handle_unsaved_discard(),
+                    width=90,
+                )
+                dpg.add_button(
+                    label="Cancel",
+                    callback=lambda: self._handle_unsaved_cancel(),
+                    width=90,
+                )
+
+        # Wait for user choice (this is handled via callbacks)
+        return False  # Will be handled by callbacks
+
+    def _handle_unsaved_save(self) -> None:
+        """Handle Save button in unsaved changes dialog."""
+        if dpg.does_item_exist("unsaved_dialog"):
+            dpg.delete_item("unsaved_dialog")
+        self._save_workflow()
+
+    def _handle_unsaved_discard(self) -> None:
+        """Handle Don't Save button in unsaved changes dialog."""
+        if dpg.does_item_exist("unsaved_dialog"):
+            dpg.delete_item("unsaved_dialog")
+        # Proceed with whatever action triggered this
+
+    def _handle_unsaved_cancel(self) -> None:
+        """Handle Cancel button in unsaved changes dialog."""
+        if dpg.does_item_exist("unsaved_dialog"):
+            dpg.delete_item("unsaved_dialog")
+        # Do nothing - user cancelled
+
+    def _new_workflow(self) -> None:
+        """Create a new empty workflow."""
+        if self.is_dirty:
+            # Show unsaved changes dialog
+            self._check_unsaved_changes()
+            # Note: actual clearing will happen after dialog closes
+            return
+
+        # Clear current workflow
+        self._clear_workflow()
+        self.current_file_path = None
+        self._mark_clean()
+
+    def _clear_workflow(self) -> None:
+        """Clear all nodes and connections from the workflow."""
+        # Delete all nodes from UI
+        for node_id in list(self.nodes.keys()):
+            if dpg.does_item_exist(node_id):
+                dpg.delete_item(node_id)
+            # Also delete inspector and rename windows
+            if dpg.does_item_exist(f"inspector_{node_id}"):
+                dpg.delete_item(f"inspector_{node_id}")
+            if dpg.does_item_exist(f"rename_{node_id}"):
+                dpg.delete_item(f"rename_{node_id}")
+
+        # Clear state
+        self.workflow = Workflow(id="main", name="Main Workflow")
+        self.nodes = {}
+        self.edges = []
+        self.connections = {}
+        self.node_positions = {}
+        self.node_last_outputs = {}
+
+    def _open_workflow(self) -> None:
+        """Open a workflow file."""
+        if self.is_dirty:
+            self._check_unsaved_changes()
+            return
+
+        # Open file dialog
+        dpg.add_file_dialog(
+            directory_selector=False,
+            show=True,
+            callback=self._file_dialog_open_callback,
+            tag="file_dialog_open",
+            width=700,
+            height=400,
+            default_filename="",
+            default_path="",
+        )
+        dpg.add_file_extension(".lh", color=(255, 255, 0, 255), parent="file_dialog_open")
+
+    def _file_dialog_open_callback(self, sender, app_data) -> None:
+        """Callback for open file dialog."""
+        selections = app_data.get("selections", {})
+        if selections:
+            filepath = list(selections.values())[0]
+            self._load_workflow_from_file(filepath)
+
+    def _save_workflow(self) -> None:
+        """Save workflow to current file or prompt for location."""
+        if self.current_file_path:
+            self._save_to_file(self.current_file_path)
+        else:
+            self._save_workflow_as()
+
+    def _save_workflow_as(self) -> None:
+        """Save workflow to a new file (prompt for location)."""
+        # Open save file dialog
+        dpg.add_file_dialog(
+            directory_selector=False,
+            show=True,
+            callback=self._file_dialog_save_callback,
+            tag="file_dialog_save",
+            width=700,
+            height=400,
+            default_filename="workflow.lh",
+            default_path="",
+        )
+        dpg.add_file_extension(".lh", color=(255, 255, 0, 255), parent="file_dialog_save")
+
+    def _file_dialog_save_callback(self, sender, app_data) -> None:
+        """Callback for save file dialog."""
+        filepath = app_data.get("file_path_name", "")
+        if filepath:
+            # Ensure .lh extension
+            if not filepath.endswith(".lh"):
+                filepath += ".lh"
+            self._save_to_file(filepath)
+
+    def _save_to_file(self, filepath: str) -> None:
+        """Save workflow to the specified file."""
+        try:
+            # Extract node positions from DearPyGui
+            positions = {}
+            for node_id in self.workflow.nodes:
+                if dpg.does_item_exist(node_id):
+                    pos = dpg.get_item_pos(node_id)
+                    positions[node_id] = tuple(pos)
+                else:
+                    positions[node_id] = (0, 0)
+
+            # Save using workflow file service
+            self.container.workflow_file_service.save_to_file(self.workflow, positions, filepath)
+
+            # Update state
+            self.current_file_path = filepath
+            self._mark_clean()
+
+            console.print(f"[green]Workflow saved to {filepath}[/green]")
+
+        except Exception as e:
+            console.print(f"[red]Error saving workflow: {e}[/red]")
+            # Show error dialog
+            with dpg.window(
+                label="Save Error",
+                modal=True,
+                show=True,
+                tag="save_error_dialog",
+                no_resize=True,
+                pos=[self.width // 2 - 150, self.height // 2 - 50],
+            ):
+                dpg.add_text(f"Failed to save workflow:\n{str(e)}")
+                dpg.add_separator()
+                dpg.add_button(
+                    label="OK",
+                    callback=lambda: dpg.delete_item("save_error_dialog"),
+                    width=-1,
+                )
+
+    def _load_workflow_from_file(self, filepath: str) -> None:
+        """Load workflow from the specified file."""
+        try:
+            # Load using workflow file service
+            loaded_workflow, loaded_positions = self.container.workflow_file_service.load_from_file(
+                filepath
+            )
+
+            # Clear current workflow
+            self._clear_workflow()
+
+            # Set loaded workflow
+            self.workflow = loaded_workflow
+            self.current_file_path = filepath
+
+            # Recreate nodes in UI
+            for node_id, node in loaded_workflow.nodes.items():
+                # Get position
+                position = loaded_positions.get(node_id, (0, 0))
+
+                # Node is already a BaseNode instance from loaded workflow
+                # Just store reference
+                self.nodes[node_id] = node
+
+                # Render node
+                self.node_renderer.render_node(
+                    node,
+                    position,
+                    {
+                        "on_delete": self._on_delete_node,
+                        "on_rename": self._on_rename_node,
+                        "on_execute": self._on_execute_node,
+                        "on_save": self._on_save_node,
+                    },
+                )
+
+                # Set position
+                dpg.set_item_pos(node_id, position)
+
+            # Recreate connections
+            for conn in loaded_workflow.connections:
+                from_node_id = conn.from_node_id
+                to_node_id = conn.to_node_id
+
+                # Get attribute IDs (output of from_node, input of to_node)
+                from_attr = f"{from_node_id}_output"
+                to_attr = f"{to_node_id}_input"
+
+                # Create link in node editor
+                if dpg.does_item_exist(from_attr) and dpg.does_item_exist(to_attr):
+                    link = dpg.add_node_link(from_attr, to_attr, parent=self._editor_id)
+                    self.edges.append((from_attr, to_attr, link))
+
+                # Update connections dict
+                if to_node_id not in self.connections:
+                    self.connections[to_node_id] = []
+                self.connections[to_node_id].append(from_node_id)
+
+            # Mark as clean
+            self._mark_clean()
+
+            console.print(f"[green]Workflow loaded from {filepath}[/green]")
+
+        except Exception as e:
+            console.print(f"[red]Error loading workflow: {e}[/red]")
+            # Show error dialog
+            with dpg.window(
+                label="Load Error",
+                modal=True,
+                show=True,
+                tag="load_error_dialog",
+                no_resize=True,
+                pos=[self.width // 2 - 150, self.height // 2 - 50],
+            ):
+                dpg.add_text(f"Failed to load workflow:\n{str(e)}")
+                dpg.add_separator()
+                dpg.add_button(
+                    label="OK",
+                    callback=lambda: dpg.delete_item("load_error_dialog"),
+                    width=-1,
+                )
 
     def _setup_execution_logs_ui(self) -> None:
         """
@@ -724,10 +1062,10 @@ class LighthouseUI:
             # Create node using factory
             node = self.container.node_factory.create_node(node_type)
 
-            # Add to workflow
+            # Add to workflow (BaseNode for execution)
             self.workflow.add_node(node)
 
-            # Store node reference
+            # Store node reference (BaseNode instance for UI)
             self.nodes[node.id] = node
 
             # Get position for new node
@@ -743,6 +1081,9 @@ class LighthouseUI:
                 "on_rename": self._on_rename_node,
             }
             self.node_renderer.render_node(node, position, callbacks)
+
+            # Mark workflow as modified
+            self._mark_dirty()
 
             console.print(f"[green]Added {node_type} node: {node.id[-8:]}[/green]")
 
@@ -774,6 +1115,9 @@ class LighthouseUI:
         # Update workflow connections
         self.workflow.add_connection(source_node_id, target_node_id)
 
+        # Mark workflow as modified
+        self._mark_dirty()
+
     def _on_delink(self, sender, app_data) -> None:
         """Handle node delinking."""
         edge = dpg.get_item_configuration(item=app_data)
@@ -795,6 +1139,9 @@ class LighthouseUI:
 
         dpg.delete_item(app_data)
 
+        # Mark workflow as modified
+        self._mark_dirty()
+
     def _on_edit_node(self, sender, app_data, user_data) -> None:
         """Handle node edit button click."""
         node_id = user_data
@@ -809,6 +1156,9 @@ class LighthouseUI:
         node = self.nodes.get(node_id)
         if node:
             # Renderer already updated the node state
+            # Node is already in workflow, no need to update
+            # Mark workflow as modified
+            self._mark_dirty()
             # This callback is for any additional app-level processing
             console.print(f"[cyan]App notified of save: {node.name}[/cyan]")
 
@@ -818,6 +1168,9 @@ class LighthouseUI:
         node = self.nodes.get(node_id)
         if node:
             node.name = new_name
+            # Node is already in workflow, name change is reflected
+            # Mark workflow as modified
+            self._mark_dirty()
             console.print(f"[cyan]Renamed node {node_id} to: {new_name}[/cyan]")
 
     def _get_node_state_preview(self, node) -> str:
@@ -873,6 +1226,9 @@ class LighthouseUI:
 
         # Remove from UI
         self.node_renderer.remove_node(node_id)
+
+        # Mark workflow as modified
+        self._mark_dirty()
 
     def _topo_sort(self) -> List[str]:
         """Perform topological sort on the node graph."""

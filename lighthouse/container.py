@@ -9,11 +9,13 @@ from typing import Optional
 
 from lighthouse.application.services.execution_manager import ExecutionManager
 from lighthouse.application.services.node_factory import NodeFactory
+from lighthouse.application.services.workflow_file_service import WorkflowFileService
 from lighthouse.application.services.workflow_orchestrator import WorkflowOrchestrator
 from lighthouse.domain.protocols.logger_protocol import ILogger
 from lighthouse.domain.services.context_builder import ContextBuilder
 from lighthouse.domain.services.expression_service import ExpressionService
 from lighthouse.domain.services.topology_service import TopologyService
+from lighthouse.domain.services.workflow_serializer import WorkflowSerializer
 from lighthouse.infrastructure.logging.file_logger import FileLogger
 from lighthouse.nodes.registry import NodeRegistry, get_registry
 
@@ -31,12 +33,14 @@ class ServiceContainer:
     expression_service: ExpressionService
     topology_service: TopologyService
     context_builder: ContextBuilder
+    workflow_serializer: WorkflowSerializer
 
     # Application services
     node_registry: NodeRegistry
     node_factory: NodeFactory
     execution_manager: ExecutionManager
     workflow_orchestrator: WorkflowOrchestrator
+    workflow_file_service: WorkflowFileService
 
     # Infrastructure services
     logger: Optional[ILogger] = None
@@ -64,6 +68,7 @@ def create_container(
     expression_service = ExpressionService()
     topology_service = TopologyService()
     context_builder = ContextBuilder()
+    workflow_serializer = WorkflowSerializer()
 
     # Infrastructure services
     logger: Optional[ILogger] = None
@@ -82,15 +87,23 @@ def create_container(
         execution_manager=execution_manager,
     )
 
+    # Workflow file service
+    workflow_file_service = WorkflowFileService(
+        serializer=workflow_serializer,
+        node_factory=node_factory,
+    )
+
     # Create container
     return ServiceContainer(
         expression_service=expression_service,
         topology_service=topology_service,
         context_builder=context_builder,
+        workflow_serializer=workflow_serializer,
         node_registry=node_registry,
         node_factory=node_factory,
         execution_manager=execution_manager,
         workflow_orchestrator=workflow_orchestrator,
+        workflow_file_service=workflow_file_service,
         logger=logger,
     )
 
