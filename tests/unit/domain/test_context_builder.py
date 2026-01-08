@@ -1,6 +1,5 @@
 """Unit tests for ContextBuilder."""
 
-
 import pytest
 
 from lighthouse.domain.models.execution import (

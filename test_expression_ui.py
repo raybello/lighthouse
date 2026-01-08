@@ -108,9 +108,9 @@ def test_expression_preservation():
     loaded_calc_expr = loaded_calc.state.get("expression", "")
 
     assert expression_url in loaded_http_url, f"Expression lost after load! Got: {loaded_http_url}"
-    assert (
-        expression_calc in loaded_calc_expr
-    ), f"Expression lost after load! Got: {loaded_calc_expr}"
+    assert expression_calc in loaded_calc_expr, (
+        f"Expression lost after load! Got: {loaded_calc_expr}"
+    )
 
     print(f"  ✓ HTTP URL after load: {loaded_http_url}")
     print(f"  ✓ Calc expr after load: {loaded_calc_expr}")
