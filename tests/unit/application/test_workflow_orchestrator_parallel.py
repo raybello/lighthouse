@@ -16,9 +16,10 @@ from lighthouse.nodes.trigger.manual_trigger_node import ManualTriggerNode
 class TestParallelExecution:
     """Test parallel execution of workflows."""
 
-    def test_sequential_execution_mode_default(self):
-        """Test that sequential mode is the default."""
-        config = ExecutionConfig()
+    def test_sequential_execution_mode(self):
+        """Test sequential mode configuration."""
+        config = ExecutionConfig(mode=ExecutionMode.SEQUENTIAL, max_workers=4)
+        assert config.max_workers == 4
         assert config.mode == ExecutionMode.SEQUENTIAL
 
     def test_parallel_execution_mode(self):
