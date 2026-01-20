@@ -12,4 +12,7 @@ build/
 Thumbs.db
 coverage.xml
 .coverage
+.claude
+.vscode
+CLAUDE.md
 *.lh
