@@ -9,11 +9,8 @@ Author: Ray B.
 Version: 1.0.0
 """
 
-# from src.lighthouse import LighthouseApp
 from lighthouse.presentation.dearpygui.app import run_app
 
 if __name__ == "__main__":
     # Create and run the application
-    # app = LighthouseApp()
-    # app.run()
     run_app()
