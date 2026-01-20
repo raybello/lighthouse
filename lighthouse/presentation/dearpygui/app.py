@@ -227,6 +227,12 @@ class LighthouseUI:
                     label="Exit",
                     callback=lambda: dpg.stop_dearpygui(),
                 )
+            with dpg.menu(label="Help"):
+                dpg.add_text("About")
+                dpg.add_text("- Right Click to create a node.")
+                dpg.add_text("- Drag node input to output to make a connection.")
+                dpg.add_separator()
+                dpg.add_text("Ray B. 2025")
 
     def _update_title(self) -> None:
         """Update window title to reflect current file and dirty state."""
