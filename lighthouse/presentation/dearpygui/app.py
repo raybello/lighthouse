@@ -139,6 +139,10 @@ class LighthouseUI:
                 with dpg.tab(label="Execution Logs", tag="execution_logs_tab"):
                     self._setup_execution_logs_ui()
 
+                # Node Explorer Tab
+                with dpg.tab(label="Node Explorer", tag="node_explorer_tab"):
+                    self._setup_node_explorer_ui()
+
         # Setup context menu
         self._setup_context_menu()
 
@@ -1142,6 +1146,317 @@ class LighthouseUI:
         except Exception as e:
             console.print(f"[red]Failed to open directory: {e}[/red]")
 
+    def _copy_to_clipboard(self, text: str) -> bool:
+        """
+        Copy text to system clipboard using platform-specific commands.
+
+        Args:
+            text: The text to copy
+
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            if sys.platform == "darwin":  # macOS
+                subprocess.run(["pbcopy"], input=text.encode("utf-8"), check=True)
+            elif sys.platform == "win32":  # Windows
+                subprocess.run(["clip"], input=text.encode("utf-8"), check=True)
+            else:  # Linux
+                subprocess.run(
+                    ["xclip", "-selection", "clipboard"],
+                    input=text.encode("utf-8"),
+                    check=True,
+                )
+            return True
+        except Exception as e:
+            console.print(f"[red]Failed to copy to clipboard: {e}[/red]")
+            return False
+
+    def _setup_node_explorer_ui(self) -> None:
+        """Create the Node Explorer tab UI."""
+        with dpg.group(horizontal=False):
+            # Header with search and refresh controls
+            with dpg.group(horizontal=True):
+                dpg.add_input_text(
+                    label="Search",
+                    tag="node_explorer_search",
+                    hint="Filter nodes...",
+                    width=300,
+                    callback=lambda: self._filter_node_explorer(),
+                )
+                dpg.add_button(
+                    label="Refresh",
+                    tag="refresh_explorer_btn",
+                    callback=lambda: self._refresh_node_explorer(),
+                    width=80,
+                )
+
+            dpg.add_separator()
+
+            # Node explorer container (scrollable)
+            with dpg.child_window(tag="node_explorer_container", height=-1, border=True):
+                dpg.add_text(
+                    "No nodes in workflow. Add nodes to see their output fields here.",
+                    tag="no_nodes_explorer_text",
+                    color=(150, 150, 155),
+                )
+
+    def _filter_node_explorer(self) -> None:
+        """Filter node explorer by search term."""
+        search_term = dpg.get_value("node_explorer_search")
+        self._refresh_node_explorer(search_filter=search_term if search_term else None)
+
+    def _refresh_node_explorer(self, search_filter: Optional[str] = None) -> None:
+        """
+        Refresh the node explorer display.
+
+        Args:
+            search_filter: Optional search filter for node names/types
+        """
+        # Clear existing entries
+        if dpg.does_item_exist("no_nodes_explorer_text"):
+            dpg.delete_item("no_nodes_explorer_text")
+
+        # Get all children of the container
+        children = dpg.get_item_children("node_explorer_container", slot=1)
+        if children:
+            for child in children:
+                if dpg.does_item_exist(child):
+                    dpg.delete_item(child)
+
+        # Check if we have nodes
+        if not self.workflow.nodes:
+            dpg.add_text(
+                "No nodes in workflow. Add nodes to see their output fields here.",
+                parent="node_explorer_container",
+                tag="no_nodes_explorer_text",
+                color=(150, 150, 155),
+            )
+            return
+
+        # Filter nodes if search term provided
+        nodes_to_display = []
+        for node_id, node in self.workflow.nodes.items():
+            if search_filter:
+                search_lower = search_filter.lower()
+                if (
+                    search_lower in node.name.lower()
+                    or search_lower in node.__class__.__name__.lower()
+                ):
+                    nodes_to_display.append((node_id, node))
+            else:
+                nodes_to_display.append((node_id, node))
+
+        # Check if filter returned results
+        if not nodes_to_display:
+            dpg.add_text(
+                f"No nodes match '{search_filter}'",
+                parent="node_explorer_container",
+                tag="no_nodes_explorer_text",
+                color=(150, 150, 155),
+            )
+            return
+
+        # Display each node
+        for node_id, node in nodes_to_display:
+            self._create_node_explorer_entry(node, search_filter)
+
+    def _create_node_explorer_entry(self, node: Any, search_filter: Optional[str]) -> None:
+        """
+        Create a node entry in the explorer.
+
+        Args:
+            node: The node to display
+            search_filter: Optional search filter
+        """
+        node_id = node.id
+        node_name = node.name
+        node_type = node.__class__.__name__
+
+        # Determine status icon
+        status = getattr(node, "status", None)
+        status_icons = {
+            "COMPLETED": "[DONE]",
+            "RUNNING": "[RUNNING]",
+            "ERROR": "[ERROR]",
+        }
+        icon = status_icons.get(status, "[·]")
+
+        # Create tree node tag
+        tree_tag = f"explorer_node_{node_id}"
+
+        # Check for output data
+        has_output = node_id in self.node_last_outputs
+
+        # Create collapsible tree node
+        with dpg.tree_node(
+            label=f"{icon} {node_name} ({node_type})",
+            parent="node_explorer_container",
+            tag=tree_tag,
+            default_open=False,
+        ):
+            if has_output:
+                output_data = self.node_last_outputs[node_id].get("data", {})
+                if output_data:
+                    # Render output fields recursively
+                    self._render_output_fields(
+                        node_id=node_id,
+                        node_name=node_name,
+                        output_data=output_data,
+                        parent_tag=tree_tag,
+                        path="data",
+                        depth=0,
+                    )
+                else:
+                    dpg.add_text("No data returned", color=(150, 150, 155))
+            else:
+                dpg.add_text(
+                    "No output data available - execute this node to see fields",
+                    color=(150, 150, 155),
+                )
+
+    def _render_output_fields(
+        self,
+        node_id: str,
+        node_name: str,
+        output_data: Any,
+        parent_tag: str,
+        path: str = "data",
+        depth: int = 0,
+    ) -> None:
+        """
+        Recursively render output fields.
+
+        Args:
+            node_id: Node ID
+            node_name: Node name
+            output_data: The data to render
+            parent_tag: Parent DearPyGui tag
+            path: Current path in the data structure
+            depth: Current recursion depth
+        """
+        # Prevent infinite recursion
+        if depth > 5:
+            dpg.add_text("... (max depth reached)", color=(150, 150, 155), parent=parent_tag)
+            return
+
+        # Handle different data types
+        if isinstance(output_data, dict):
+            # Render each key-value pair
+            for key, value in output_data.items():
+                field_path = f"{path}.{key}"
+                if isinstance(value, (dict, list)):
+                    # Create nested tree node
+                    nested_tag = f"explorer_field_{node_id}_{field_path}"
+                    with dpg.tree_node(
+                        label=f"{key}",
+                        parent=parent_tag,
+                        tag=nested_tag,
+                        default_open=False,
+                    ):
+                        self._render_output_fields(
+                            node_id, node_name, value, nested_tag, field_path, depth + 1
+                        )
+                else:
+                    # Render as button
+                    self._render_field_button(node_name, field_path, value, parent_tag)
+
+        elif isinstance(output_data, list):
+            # Show first 10 items
+            items_to_show = min(len(output_data), 10)
+            for i in range(items_to_show):
+                item = output_data[i]
+                field_path = f"{path}[{i}]"
+                if isinstance(item, (dict, list)):
+                    # Create nested tree node
+                    nested_tag = f"explorer_field_{node_id}_{field_path}"
+                    with dpg.tree_node(
+                        label=f"[{i}]",
+                        parent=parent_tag,
+                        tag=nested_tag,
+                        default_open=False,
+                    ):
+                        self._render_output_fields(
+                            node_id, node_name, item, nested_tag, field_path, depth + 1
+                        )
+                else:
+                    # Render as button
+                    self._render_field_button(node_name, field_path, item, parent_tag)
+
+            # Show "and N more" if there are more items
+            if len(output_data) > 10:
+                dpg.add_text(
+                    f"... and {len(output_data) - 10} more",
+                    color=(150, 150, 155),
+                    parent=parent_tag,
+                )
+        else:
+            # Primitive value - render as button
+            self._render_field_button(node_name, path, output_data, parent_tag)
+
+    def _render_field_button(
+        self, node_name: str, field_path: str, value: Any, parent_tag: str
+    ) -> None:
+        """
+        Render a clickable field button.
+
+        Args:
+            node_name: Node name
+            field_path: Field path (e.g., "data.fieldName")
+            value: Field value
+            parent_tag: Parent DearPyGui tag
+        """
+        # Extract field name from path
+        field_name = field_path.split(".")[-1].replace("[", "").replace("]", "")
+        if "[" in field_path:
+            # For array indices, use the last part with brackets
+            parts = field_path.split(".")
+            field_name = parts[-1] if "[" in parts[-1] else field_path.split(".")[-1]
+
+        # Format value preview
+        value_preview = str(value)
+        if isinstance(value, str):
+            if len(value) > 50:
+                value_preview = f'"{value[:50]}..."'
+            else:
+                value_preview = f'"{value}"'
+        elif isinstance(value, (dict, list)):
+            value_preview = f"<{type(value).__name__}>"
+        elif value is None:
+            value_preview = "null"
+        elif isinstance(value, bool):
+            value_preview = "true" if value else "false"
+
+        # Create button
+        button_label = f"{field_name}: {value_preview}"
+        btn = dpg.add_button(
+            label=button_label,
+            callback=lambda: self._on_field_button_click(node_name, field_path),
+            width=-1,
+            parent=parent_tag,
+        )
+
+        # Apply theme if available
+        if dpg.does_item_exist("context_button_theme"):
+            dpg.bind_item_theme(btn, "context_button_theme")
+
+    def _on_field_button_click(self, node_name: str, field_path: str) -> None:
+        """
+        Handle field button click - copy expression to clipboard.
+
+        Args:
+            node_name: Node name
+            field_path: Field path (e.g., "data.fieldName")
+        """
+        # Build expression
+        expression = f'{{{{$node["{node_name}"].{field_path}}}}}'
+
+        # Copy to clipboard
+        if self._copy_to_clipboard(expression):
+            console.print(f"[green]Copied to clipboard: {expression}[/green]")
+        else:
+            console.print(f"[yellow]Expression: {expression}[/yellow]")
+
     def _setup_handlers(self) -> None:
         """Setup input handlers."""
         with dpg.handler_registry():
@@ -1630,6 +1945,10 @@ class LighthouseUI:
             dpg.set_frame_callback(
                 dpg.get_frame_count() + 1, lambda: self._refresh_execution_logs()
             )
+
+        # Refresh node explorer
+        if dpg.does_item_exist("node_explorer_tab"):
+            dpg.set_frame_callback(dpg.get_frame_count() + 1, lambda: self._refresh_node_explorer())
 
     def _cancel_execution(self) -> None:
         """Cancel the currently running workflow execution."""
